@@ -14,7 +14,8 @@ UNSAFE_API_SWAPS: dict[str, list[str]] = {
     "memmove":  ["memmove_s"],
 }
 
-STACK_PROTECTION_FUNCS = {"__stack_chk_fail", "__stack_chk_guard", "__fortify_fail"}
+STACK_PROTECTION_FUNCS = {"__stack_chk_fail", "__stack_chk_guard", "__fortify_fail",
+                          "stack_chk_fail", "stack_chk_guard", "fortify_fail"}
 
 BOUNDS_CONSTANTS = {
     0x10, 0x20, 0x40, 0x80, 0x100, 0x200, 0x400, 0x800,
@@ -24,6 +25,22 @@ BOUNDS_CONSTANTS = {
 ERROR_KEYWORDS = {"error", "fail", "invalid", "overflow", "underflow", "denied",
                   "refused", "corrupt", "abort", "panic", "out of bounds",
                   "buffer", "null", "bad", "illegal", "exceed", "limit"}
+
+
+def _normalize_symbol(name: str) -> str:
+    """Normalize a symbol name: strip leading underscores and __chk/__s suffixes."""
+    # Strip Mach-O leading underscore
+    n = name.lstrip("_")
+    # Strip compiler-fortified suffixes: ___sprintf_chk -> sprintf
+    for suffix in ("_chk", "_s"):
+        if n.endswith(suffix):
+            n = n[: -len(suffix)]
+    return n
+
+
+def _normalize_set(names: set[str]) -> dict[str, str]:
+    """Return {normalized_name: original_name} for a set of symbol names."""
+    return {_normalize_symbol(n): n for n in names}
 
 
 def triage_function(func_diff: dict) -> dict:
@@ -42,22 +59,27 @@ def triage_function(func_diff: dict) -> dict:
     strings_removed = signals.get("strings_removed", [])
     consts_added = set(signals.get("constants_added", []))
 
+    # Build normalized lookup for symbol matching across platforms
+    norm_added = _normalize_set(ext_added | calls_added)
+    norm_removed = _normalize_set(ext_removed)
+
     # --- Heuristic 1: unsafe -> safer API swap ---
     for unsafe, safer_list in UNSAFE_API_SWAPS.items():
-        if unsafe in ext_removed:
+        if unsafe in norm_removed:
+            orig_unsafe = norm_removed[unsafe]
             for safer in safer_list:
-                if safer in ext_added:
-                    rationale.append(f"Replaced unsafe `{unsafe}` with `{safer}`")
+                if safer in norm_added:
+                    orig_safer = norm_added[safer]
+                    rationale.append(f"Replaced unsafe `{orig_unsafe}` with `{orig_safer}`")
                     sec_score += 3.0
                     break
             else:
-                # Removed unsafe without clear replacement
-                rationale.append(f"Removed call to unsafe `{unsafe}`")
+                rationale.append(f"Removed call to unsafe `{orig_unsafe}`")
                 sec_score += 1.5
 
     # --- Heuristic 2: stack protection added ---
     for pf in STACK_PROTECTION_FUNCS:
-        if pf in calls_added:
+        if pf in norm_added:
             rationale.append(f"Added stack protection (`{pf}`)")
             sec_score += 2.5
 

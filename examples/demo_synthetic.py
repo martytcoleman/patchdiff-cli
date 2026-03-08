@@ -245,13 +245,12 @@ diff_data = analyze_diff(features_a, features_b, match_data)
 
 # Triage
 diff_data = triage_diff(diff_data)
-print(f"Triage summary: {diff_data['triage_summary']}")
 
 # Save diff
 with open(os.path.join(outdir, "diff.json"), "w") as f:
     json.dump(diff_data, f, indent=2, default=str)
 
-# Report
+# Report files
 md = generate_markdown(diff_data)
 with open(os.path.join(outdir, "report.md"), "w") as f:
     f.write(md)
@@ -260,15 +259,8 @@ html = generate_html(md)
 with open(os.path.join(outdir, "report.html"), "w") as f:
     f.write(html)
 
-print(f"\nOutputs written to {outdir}/")
-print("  features_v1.json, features_v2.json")
-print("  diff.json")
-print("  report.md, report.html")
-print("\nTop findings:")
-for func in diff_data["functions"][:5]:
-    label = func.get("triage_label", "?")
-    interest = func.get("interestingness", 0)
-    rationale = func.get("triage_rationale", [])
-    print(f"  [{label}] {func['name_a']} (interest={interest})")
-    for r in rationale:
-        print(f"    - {r}")
+# Print colorized report to terminal
+from patchtriage.console import print_report
+print_report(diff_data)
+
+print(f"\nOutputs also written to {outdir}/")

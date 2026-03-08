@@ -1,6 +1,6 @@
 # PatchTriage Diff Report
 
-**Generated:** 2026-03-06 23:57:07
+**Generated:** 2026-03-07 16:49:50
 **Binary A:** `example_server_v1.0`
 **Binary B:** `example_server_v1.1`
 
@@ -32,7 +32,7 @@
 - **Blocks:** 8 -> 14 (+6)
 - **Instructions:** 70 -> 95 (+25)
 
-**Rationale:**
+**Heuristic Rationale:**
 - Replaced unsafe `sprintf` with `snprintf`
 - Added bounds constant(s) ['0x1000', '0x2000'] with 3 new comparison(s)
 - Added error/validation string(s): ['invalid header']
@@ -53,9 +53,9 @@
 - **Blocks:** 6 -> 9 (+3)
 - **Instructions:** 50 -> 68 (+18)
 
-**Rationale:**
+**Heuristic Rationale:**
 - Replaced unsafe `strcpy` with `strncpy`
-- Added stack protection (`__stack_chk_fail`)
+- Added stack protection (`stack_chk_fail`)
 - Added bounds constant(s) ['0x40'] with 2 new comparison(s)
 - Added error/validation string(s): ['authentication failed']
 - Added 3 blocks, 2 cmp(s), 4 branch(es) — possible new validation paths
@@ -87,7 +87,7 @@
 - **Blocks:** 4 -> 4 (+0)
 - **Instructions:** 40 -> 42 (+2)
 
-**Rationale:**
+**Heuristic Rationale:**
 - Added error/validation string(s): ['500 Internal Server Error']
 
   Strings added: ['500 Internal Server Error']

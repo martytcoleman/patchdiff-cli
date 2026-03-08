@@ -92,7 +92,7 @@
       "constants": [],
       "called_functions": [
         {
-          "name": "_strchr",
+          "name": "___strncpy_chk",
           "is_external": true
         },
         {
@@ -100,7 +100,7 @@
           "is_external": true
         },
         {
-          "name": "___strncpy_chk",
+          "name": "_strchr",
           "is_external": true
         }
       ],
@@ -156,15 +156,15 @@
       "constants": [],
       "called_functions": [
         {
+          "name": "___strncpy_chk",
+          "is_external": true
+        },
+        {
           "name": "_strchr",
           "is_external": true
         },
         {
           "name": "___strcpy_chk",
-          "is_external": true
-        },
-        {
-          "name": "___strncpy_chk",
           "is_external": true
         }
       ],
@@ -383,15 +383,11 @@
       "constants": [],
       "called_functions": [
         {
-          "name": "_strtok",
-          "is_external": true
-        },
-        {
-          "name": "_malloc",
-          "is_external": true
-        },
-        {
           "name": "_bzero",
+          "is_external": true
+        },
+        {
+          "name": "_strstr",
           "is_external": true
         },
         {
@@ -403,15 +399,7 @@
           "is_external": true
         },
         {
-          "name": "_strdup",
-          "is_external": true
-        },
-        {
-          "name": "_free",
-          "is_external": true
-        },
-        {
-          "name": "_strcasecmp",
+          "name": "_memcpy",
           "is_external": true
         },
         {
@@ -423,7 +411,19 @@
           "is_external": false
         },
         {
-          "name": "_strstr",
+          "name": "_strcasecmp",
+          "is_external": true
+        },
+        {
+          "name": "_strdup",
+          "is_external": true
+        },
+        {
+          "name": "_strtok",
+          "is_external": true
+        },
+        {
+          "name": "_free",
           "is_external": true
         },
         {
@@ -431,7 +431,7 @@
           "is_external": true
         },
         {
-          "name": "_memcpy",
+          "name": "_malloc",
           "is_external": true
         }
       ],
@@ -566,15 +566,15 @@
       "constants": [],
       "called_functions": [
         {
+          "name": "___stack_chk_fail",
+          "is_external": true
+        },
+        {
           "name": "_printf",
           "is_external": true
         },
         {
           "name": "___sprintf_chk",
-          "is_external": true
-        },
-        {
-          "name": "___stack_chk_fail",
           "is_external": true
         }
       ],
@@ -690,11 +690,7 @@
       "constants": [],
       "called_functions": [
         {
-          "name": "_parse_http_request",
-          "is_external": false
-        },
-        {
-          "name": "_printf",
+          "name": "_strtol",
           "is_external": true
         },
         {
@@ -702,7 +698,7 @@
           "is_external": true
         },
         {
-          "name": "_strtol",
+          "name": "___stack_chk_fail",
           "is_external": true
         },
         {
@@ -714,11 +710,15 @@
           "is_external": false
         },
         {
-          "name": "_putchar",
+          "name": "_parse_http_request",
+          "is_external": false
+        },
+        {
+          "name": "_printf",
           "is_external": true
         },
         {
-          "name": "___stack_chk_fail",
+          "name": "_putchar",
           "is_external": true
         }
       ],

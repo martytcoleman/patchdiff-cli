@@ -110,7 +110,7 @@
       "triage_label": "security_fix_likely",
       "triage_rationale": [
         "Replaced unsafe `strcpy` with `strncpy`",
-        "Added stack protection (`__stack_chk_fail`)",
+        "Added stack protection (`stack_chk_fail`)",
         "Added bounds constant(s) ['0x40'] with 2 new comparison(s)",
         "Added error/validation string(s): ['authentication failed']",
         "Added 3 blocks, 2 cmp(s), 4 branch(es) \u2014 possible new validation paths"

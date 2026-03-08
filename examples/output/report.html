@@ -1,114 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PatchTriage Report</title>
 <style>
-body { font-family: 'Courier New', monospace; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #1a1a2e; color: #e0e0e0; line-height: 1.6; }
-pre { white-space: pre-wrap; word-wrap: break-word; }
+:root {
+  --bg: #0d1117; --fg: #c9d1d9; --accent: #58a6ff; --border: #30363d;
+  --sec-likely: #f85149; --sec-possible: #d29922; --behavior: #58a6ff;
+  --refactor: #8b949e; --unchanged: #484f58;
+  --severity-crit: #f85149; --severity-high: #db6d28;
+  --severity-med: #d29922; --severity-low: #58a6ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--fg); max-width: 960px; margin: 0 auto; padding: 24px; line-height: 1.7; }
+h1 { color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 20px; font-size: 1.8em; }
+h2 { color: var(--accent); margin-top: 32px; margin-bottom: 12px; font-size: 1.4em; }
+h3 { color: #fff; margin-top: 20px; margin-bottom: 8px; font-size: 1.1em; }
+code { background: #161b22; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: #79c0ff; }
+strong { color: #fff; }
+hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+li { margin-left: 20px; margin-bottom: 4px; }
+table { border-collapse: collapse; margin: 8px 0; }
+td { padding: 4px 12px; border: 1px solid var(--border); }
+tr:first-child td { font-weight: bold; background: #161b22; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;
+}
+.badge:has(SEC-LIKELY), .badge:contains(SEC-LIKELY) { background: var(--sec-likely); color: #fff; }
+.vuln-box {
+  background: #161b22; border-left: 3px solid var(--sec-likely); padding: 8px 12px; margin: 8px 0; border-radius: 0 6px 6px 0;
+}
+p { margin-bottom: 8px; }
 </style>
 </head>
 <body>
-<pre># PatchTriage Diff Report
+<h1>PatchTriage Diff Report</h1></p><p><strong>Generated:</strong> 2026-03-07 16:49:50<br>
+<strong>Binary A:</strong> <code>example_server_v1.0</code><br>
+<strong>Binary B:</strong> <code>example_server_v1.1</code></p><p><h2>Summary</h2></p><p><tr><td>Metric</td><td>Value</td></tr></p><p><tr><td>Matched functions</td><td>5</td></tr><br>
+<tr><td>Unmatched in A</td><td>0</td></tr><br>
+<tr><td>Unmatched in B</td><td>1</td></tr></p><p><h3>Triage Breakdown</h3></p><p><tr><td>Label</td><td>Count</td></tr></p><p><tr><td><span class="badge">SEC-LIKELY</span></td><td>2</td></tr><br>
+<tr><td>[BEHAVIOR]</td><td>1</td></tr><br>
+<tr><td>[UNCHANGED]</td><td>1</td></tr><br>
+<tr><td>[UNKNOWN]</td><td>1</td></tr></p><p><h2>Top 4 Changed Functions</h2></p><p><h3>1. <code>parse_request</code> <span class="badge">SEC-LIKELY</span></h3></p><p><li><strong>Interestingness:</strong> 23.5</li><br>
+<li><strong>Match score:</strong> 0.6373 (name_exact)</li><br>
+<li><strong>Triage confidence:</strong> 1.0</li><br>
+<li><strong>Size:</strong> 200 -&gt; 280 (+40.0%)</li><br>
+<li><strong>Blocks:</strong> 8 -&gt; 14 (+6)</li><br>
+<li><strong>Instructions:</strong> 70 -&gt; 95 (+25)</li></p><p><strong>Heuristic Rationale:</strong><br>
+<li>Replaced unsafe <code>sprintf</code> with <code>snprintf</code></li><br>
+<li>Added bounds constant(s) ['0x1000', '0x2000'] with 3 new comparison(s)</li><br>
+<li>Added error/validation string(s): ['invalid header']</li><br>
+<li>Added 6 blocks, 3 cmp(s), 5 branch(es) — possible new validation paths</li></p><p>  Ext calls added: <code>snprintf</code><br>
+  Ext calls removed: <code>sprintf</code><br>
+  Strings added: ['invalid header', 'request too large']</p><p><hr></p><p><h3>2. <code>handle_auth</code> <span class="badge">SEC-LIKELY</span></h3></p><p><li><strong>Interestingness:</strong> 20.5</li><br>
+<li><strong>Match score:</strong> 0.6156 (name_exact)</li><br>
+<li><strong>Triage confidence:</strong> 1.0</li><br>
+<li><strong>Size:</strong> 150 -&gt; 200 (+33.3%)</li><br>
+<li><strong>Blocks:</strong> 6 -&gt; 9 (+3)</li><br>
+<li><strong>Instructions:</strong> 50 -&gt; 68 (+18)</li></p><p><strong>Heuristic Rationale:</strong><br>
+<li>Replaced unsafe <code>strcpy</code> with <code>strncpy</code></li><br>
+<li>Added stack protection (<code>stack_chk_fail</code>)</li><br>
+<li>Added bounds constant(s) ['0x40'] with 2 new comparison(s)</li><br>
+<li>Added error/validation string(s): ['authentication failed']</li><br>
+<li>Added 3 blocks, 2 cmp(s), 4 branch(es) — possible new validation paths</li></p><p>  Ext calls added: <code>__stack_chk_fail</code>, <code>strncpy</code><br>
+  Ext calls removed: <code>strcpy</code><br>
+  Strings added: ['authentication failed']</p><p><hr></p><p><h3>3. <code>main</code> [UNKNOWN]</h3></p><p><li><strong>Interestingness:</strong> 2.4</li><br>
+<li><strong>Match score:</strong> 0.9694 (name_exact)</li><br>
+<li><strong>Triage confidence:</strong> 0.0</li><br>
+<li><strong>Size:</strong> 300 -&gt; 320 (+6.7%)</li><br>
+<li><strong>Blocks:</strong> 12 -&gt; 13 (+1)</li><br>
+<li><strong>Instructions:</strong> 100 -&gt; 105 (+5)</li></p><p><br>
+<hr></p><p><h3>4. <code>send_response</code> [BEHAVIOR]</h3></p><p><li><strong>Interestingness:</strong> 1.8</li><br>
+<li><strong>Match score:</strong> 0.9292 (name_exact)</li><br>
+<li><strong>Triage confidence:</strong> 0.19</li><br>
+<li><strong>Size:</strong> 120 -&gt; 125 (+4.2%)</li><br>
+<li><strong>Blocks:</strong> 4 -&gt; 4 (+0)</li><br>
+<li><strong>Instructions:</strong> 40 -&gt; 42 (+2)</li></p><p><strong>Heuristic Rationale:</strong><br>
+<li>Added error/validation string(s): ['500 Internal Server Error']</li></p><p>  Strings added: ['500 Internal Server Error']</p><p><hr></p><p><h2>Unmatched Functions</h2></p><p><h3>New in B (1)</h3><br>
+<li><code>validate_length</code></li><br>
 
-**Generated:** 2026-03-06 23:57:07
-**Binary A:** `example_server_v1.0`
-**Binary B:** `example_server_v1.1`
-
-## Summary
-
-| Metric | Value |
-|--------|-------|
-| Matched functions | 5 |
-| Unmatched in A | 0 |
-| Unmatched in B | 1 |
-
-### Triage Breakdown
-
-| Label | Count |
-|-------|-------|
-| **[SEC-LIKELY]** | 2 |
-| [BEHAVIOR] | 1 |
-| [UNCHANGED] | 1 |
-| [UNKNOWN] | 1 |
-
-## Top 4 Changed Functions
-
-### 1. `parse_request` **[SEC-LIKELY]**
-
-- **Interestingness:** 23.5
-- **Match score:** 0.6373 (name_exact)
-- **Triage confidence:** 1.0
-- **Size:** 200 -&gt; 280 (+40.0%)
-- **Blocks:** 8 -&gt; 14 (+6)
-- **Instructions:** 70 -&gt; 95 (+25)
-
-**Rationale:**
-- Replaced unsafe `sprintf` with `snprintf`
-- Added bounds constant(s) ['0x1000', '0x2000'] with 3 new comparison(s)
-- Added error/validation string(s): ['invalid header']
-- Added 6 blocks, 3 cmp(s), 5 branch(es) — possible new validation paths
-
-  Ext calls added: `snprintf`
-  Ext calls removed: `sprintf`
-  Strings added: ['invalid header', 'request too large']
-
----
-
-### 2. `handle_auth` **[SEC-LIKELY]**
-
-- **Interestingness:** 20.5
-- **Match score:** 0.6156 (name_exact)
-- **Triage confidence:** 1.0
-- **Size:** 150 -&gt; 200 (+33.3%)
-- **Blocks:** 6 -&gt; 9 (+3)
-- **Instructions:** 50 -&gt; 68 (+18)
-
-**Rationale:**
-- Replaced unsafe `strcpy` with `strncpy`
-- Added stack protection (`__stack_chk_fail`)
-- Added bounds constant(s) ['0x40'] with 2 new comparison(s)
-- Added error/validation string(s): ['authentication failed']
-- Added 3 blocks, 2 cmp(s), 4 branch(es) — possible new validation paths
-
-  Ext calls added: `__stack_chk_fail`, `strncpy`
-  Ext calls removed: `strcpy`
-  Strings added: ['authentication failed']
-
----
-
-### 3. `main` [UNKNOWN]
-
-- **Interestingness:** 2.4
-- **Match score:** 0.9694 (name_exact)
-- **Triage confidence:** 0.0
-- **Size:** 300 -&gt; 320 (+6.7%)
-- **Blocks:** 12 -&gt; 13 (+1)
-- **Instructions:** 100 -&gt; 105 (+5)
-
-
----
-
-### 4. `send_response` [BEHAVIOR]
-
-- **Interestingness:** 1.8
-- **Match score:** 0.9292 (name_exact)
-- **Triage confidence:** 0.19
-- **Size:** 120 -&gt; 125 (+4.2%)
-- **Blocks:** 4 -&gt; 4 (+0)
-- **Instructions:** 40 -&gt; 42 (+2)
-
-**Rationale:**
-- Added error/validation string(s): ['500 Internal Server Error']
-
-  Strings added: ['500 Internal Server Error']
-
----
-
-## Unmatched Functions
-
-### New in B (1)
-- `validate_length`
-</pre>
 </body>
 </html>

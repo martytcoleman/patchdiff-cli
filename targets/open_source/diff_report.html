@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PatchTriage Report</title>
+<style>
+:root {
+  --bg: #0d1117; --fg: #c9d1d9; --accent: #58a6ff; --border: #30363d;
+  --sec-likely: #f85149; --sec-possible: #d29922; --behavior: #58a6ff;
+  --refactor: #8b949e; --unchanged: #484f58;
+  --severity-crit: #f85149; --severity-high: #db6d28;
+  --severity-med: #d29922; --severity-low: #58a6ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--fg); max-width: 960px; margin: 0 auto; padding: 24px; line-height: 1.7; }
+h1 { color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 20px; font-size: 1.8em; }
+h2 { color: var(--accent); margin-top: 32px; margin-bottom: 12px; font-size: 1.4em; }
+h3 { color: #fff; margin-top: 20px; margin-bottom: 8px; font-size: 1.1em; }
+code { background: #161b22; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: #79c0ff; }
+strong { color: #fff; }
+hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+li { margin-left: 20px; margin-bottom: 4px; }
+table { border-collapse: collapse; margin: 8px 0; }
+td { padding: 4px 12px; border: 1px solid var(--border); }
+tr:first-child td { font-weight: bold; background: #161b22; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;
+}
+.badge:has(SEC-LIKELY), .badge:contains(SEC-LIKELY) { background: var(--sec-likely); color: #fff; }
+.vuln-box {
+  background: #161b22; border-left: 3px solid var(--sec-likely); padding: 8px 12px; margin: 8px 0; border-radius: 0 6px 6px 0;
+}
+p { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<h1>PatchTriage Diff Report</h1></p><p><strong>Generated:</strong> 2026-03-07 16:51:23<br>
+<strong>Binary A:</strong> <code>/Users/marty/patchdiff-cli/targets/open_source/server_v1</code><br>
+<strong>Binary B:</strong> <code>/Users/marty/patchdiff-cli/targets/open_source/server_v2</code></p><p><h2>Executive Summary</h2></p><p><h3>Executive Summary: Binary Patch Triage for Server Application</h3></p><p>The patch from Binary A (/Users/marty/patchdiff-cli/targets/open_source/server_v1) to Binary B (/Users/marty/patchdiff-cli/targets/open_source/server_v2) primarily focuses on enhancing security and code reliability in an HTTP server application. Overall, the diff includes 8 matched functions, with 1 function removed and 2 added, indicating a targeted update rather than a wholesale rewrite. The changes are characterized by replacements of unsafe string handling functions (e.g., strcpy with strncpy) and additions of validation logic, suggesting a deliberate effort to mitigate common vulnerabilities. This scope points to a security-oriented patch, particularly in request parsing and logging components, while also incorporating minor refactors for efficiency.</p><p>Security-critical changes are evident in several functions, with fixes likely addressing buffer overflow vulnerabilities. For instance, <code>_parse_http_request</code> shows a likely fix for CWE-120 (Buffer Overflow) through the replacement of unsafe functions like strcpy with strncpy and added validation for content length. Similarly, <code>_parse_request_line</code> (CWE-22, Path Traversal) and <code>_url_decode</code> (CWE-120) include enhancements such as stack protection and new checks for buffer sizes. Other functions, like <code>_parse_header_line</code>, <code>_format_log_entry</code>, and <code>_print_request</code>, have possible security fixes for CWE-120, indicated by safer alternatives like snprintf. These changes collectively strengthen input handling but remain in the "fix likely" or "fix possible" category based on the evidence.</p><p>Notable non-security changes include a significant refactor of the <code>entry</code> function, which reduced its size from 412 to 216 bytes by simplifying basic blocks, instructions, comparisons, and branches, likely improving performance and maintainability. Additionally, two new functions were added: <code>_parse_content_length</code> and <code>_validate_path</code>, which appear to support enhanced parsing and validation logic without direct security flags in the evidence.</p><p>The patch quality appears solid based on the evidence, with most changes aligning with best practices for vulnerability mitigation (e.g., using bounded string functions), but it falls short of "fix confirmed" status due to reliance on indirect signals like function replacements and added checks. Completeness seems adequate for the identified areas, as the updates cover key HTTP-related functions, though the evidence is insufficient to rule out undetected issues in unmatched or removed code.</p><p>Recommendations for further manual review include prioritizing functions tagged as [security_fix_likely], such as <code>_parse_http_request</code>, <code>_parse_request_line</code>, and <code>_url_decode</code>, to verify CWE-120 and CWE-22 mitigations through code inspection or testing. Next, examine [security_fix_possible] functions like <code>_parse_header_line</code> for potential oversights, and assess the new functions <code>_parse_content_length</code> and <code>_validate_path</code> for integration risks. Overall, conduct dynamic testing for buffer overflows and path traversals to confirm the patch's effectiveness.</p><p><h2>Summary</h2></p><p><tr><td>Metric</td><td>Value</td></tr></p><p><tr><td>Matched functions</td><td>8</td></tr><br>
+<tr><td>Unmatched in A</td><td>1</td></tr><br>
+<tr><td>Unmatched in B</td><td>2</td></tr></p><p><h3>Triage Breakdown</h3></p><p><tr><td>Label</td><td>Count</td></tr></p><p><tr><td><span class="badge">SEC-LIKELY</span></td><td>3</td></tr><br>
+<tr><td><span class="badge">SEC-POSSIBLE</span></td><td>3</td></tr><br>
+<tr><td>[REFACTOR]</td><td>1</td></tr><br>
+<tr><td>[UNCHANGED]</td><td>1</td></tr></p><p><h2>Top 7 Changed Functions</h2></p><p><h3>1. <code>_parse_http_request</code> <span class="badge">SEC-LIKELY</span></h3></p><p><div class="vuln-box"><strong>HIGH</strong> | <strong>CWE-120</strong> — Buffer Overflow</div><br>
+<div class="vuln-box">Fix confidence: likely</div><br>
+<div class="vuln-box">Attack surface: Attackers could exploit buffer overflows by sending malformed HTTP requests with oversized strings or invalid content lengths, potentially leading to arbitrary code execution.</div></p><p><strong>LLM Analysis:</strong> The patch for the _parse_http_request function replaces the unsafe _strcpy function with the safer _strncpy, adds new validation checks including comparisons and branches for content length and request size, and introduces error strings for rejecting invalid inputs. This change likely addresses vulnerabilities by preventing buffer overflows from unvalidated string inputs in HTTP parsing, thereby improving memory safety and input validation. The addition of new blocks and calls suggests enhanced control flow for better error handling in request processing.<br>
+<strong>Category:</strong> memory_safety</p><p><li><strong>Interestingness:</strong> 61.1</li><br>
+<li><strong>Match score:</strong> 0.6174 (name_exact)</li><br>
+<li><strong>Triage confidence:</strong> 0.75</li><br>
+<li><strong>Size:</strong> 456 -&gt; 788 (+72.8%)</li><br>
+<li><strong>Blocks:</strong> 24 -&gt; 37 (+13)</li><br>
+<li><strong>Instructions:</strong> 114 -&gt; 197 (+83)</li></p><p><strong>Heuristic Rationale:</strong><br>
+<li>Replaced unsafe <code>_strcpy</code> with <code>_strncpy</code></li><br>
+<li>Added error/validation string(s): ['Rejecting request: bad Content-Length\n']</li><br>
+<li>Added 13 blocks, 6 cmp(s), 20 branch(es) — possible new validation paths</li></p><p>  Ext calls added: <code>_fprintf</code>, <code>_fwrite</code>, <code>_strlen</code>, <code>_strncpy</code><br>
+  Ext calls removed: <code>_atoi</code>, <code>_strcpy</code><br>
+  Strings added: ['Body too large: %d bytes (max %d)\n', 'Incomplete body: expected %d, got %zu\n', 'Rejecting request: bad Content-Length\n', 'Request too large: %zu bytes\n', 'Too many headers (max %d)\n']</p><p><hr></p><p><h3>2. <code>_parse_request_line</code> <span class="badge">SEC-LIKELY</span></h3></p><p><div class="vuln-box"><strong>HIGH</strong> | <strong>CWE-22</strong> — Path Traversal</div><br>
+<div class="vuln-box">Fix confidence: likely</div><br>
+<div class="vuln-box">Attack surface: Attackers could send crafted request lines with path traversal sequences (e.g., '..') to access unauthorized files or cause overflows via unchecked string operations.</div></p><p><strong>LLM Analysis:</strong> The patch for _parse_request_line replaces the unsafe ___strcpy_chk function with the safer _strncpy, likely to prevent buffer overflows when handling request strings. It also adds new validation checks, including comparisons and branches for path lengths and potential traversal patterns, as evidenced by added strings like 'Invalid path length: %zu\n' and 'Path traversal detected\n'. These changes enhance input validation, reducing risks associated with malformed or malicious inputs in request parsing, which is critical for security in networked applications.<br>
+<strong>Category:</strong> path_traversal</p><p><li><strong>Interestingness:</strong> 38.7</li><br>
+<li><strong>Match score:</strong> 0.4065 (name_exact)</li><br>
+<li><strong>Triage confidence:</strong> 0.75</li><br>
+<li><strong>Size:</strong> 196 -&gt; 340 (+73.5%)</li><br>
+<li><strong>Blocks:</strong> 5 -&gt; 12 (+7)</li><br>
+<li><strong>Instructions:</strong> 49 -&gt; 85 (+36)</li></p><p><strong>Heuristic Rationale:</strong><br>
+<li>Replaced unsafe <code>___strcpy_chk</code> with <code>_strncpy</code></li><br>
+<li>Added error/validation string(s): ['Invalid path length: %zu\n']</li><br>
+<li>Added 7 blocks, 2 cmp(s), 7 branch(es) — possible new validation paths</li></p><p>  Ext calls added: <code>_fprintf</code>, <code>_fwrite</code>, <code>_strncpy</code>, <code>_strstr</code><br>
+  Ext calls removed: <code>___strcpy_chk</code><br>
+  Strings added: ['..', 'Invalid path length: %zu\n', 'Path traversal detected\n', 'Request path too long: %d bytes\n']</p><p><hr></p><p><h3>3. <code>_url_decode</code> <span class="badge">SEC-LIKELY</span></h3></p><p><div class="vuln-box"><strong>HIGH</strong> | <strong>CWE-120</strong> — Buffer Overflow</div><br>
+<div class="vuln-box">Fix confidence: likely</div><br>
+<div class="vuln-box">Attack surface: An attacker could exploit the URL decoding function by providing input that exceeds the output buffer size, potentially causing a buffer overflow and leading to memory corruption or arbitrary code execution.</div></p><p><strong>LLM Analysis:</strong> The patch for the _url_decode function adds stack protection via ___stack_chk_fail, new comparisons and branches for validation, and an error string indicating checks for output buffer size, suggesting efforts to prevent memory-related issues. These changes increase the function's size and complexity, likely to handle edge cases in URL decoding more securely. This matters because it addresses potential vulnerabilities in processing user input, reducing the risk of exploitation through malformed URLs.<br>
+<strong>Category:</strong> memory_safety</p><p><li><strong>Interestingness:</strong> 22.3</li><br>
+<li><strong>Match score:</strong> 0.4782 (name_exact)</li><br>
+<li><strong>Triage confidence:</strong> 0.69</li><br>
+<li><strong>Size:</strong> 232 -&gt; 372 (+60.3%)</li><br>
+<li><strong>Blocks:</strong> 17 -&gt; 23 (+6)</li><br>
+<li><strong>Instructions:</strong> 58 -&gt; 93 (+35)</li></p><p><strong>Heuristic Rationale:</strong><br>
+<li>Added stack protection (<code>stack_chk_fail</code>)</li><br>
+<li>Added error/validation string(s): ['URL decode: output buffer too small\n']</li><br>
+<li>Added 6 blocks, 3 cmp(s), 4 branch(es) — possible new validation paths</li></p><p>  Ext calls added: <code>___stack_chk_fail</code>, <code>_fwrite</code><br>
+  Strings added: ['URL decode: output buffer too small\n']</p><p><hr></p><p><h3>4. <code>entry</code> [REFACTOR]</h3></p><p><strong>LLM Analysis:</strong> The entry function underwent a significant refactor, reducing its size from 412 to 216 bytes and simplifying its structure by decreasing basic blocks, instructions, comparisons, and branches. This included removing calls to external functions like _putchar and _strtol, adding a call to _url_decode, and updating version strings from '=== mini_server v1.0 ===' to '=== mini_server v2.0 ===', which suggests code optimization or cleanup without evident security implications. Overall, these changes appear to be a routine maintenance update focused on efficiency rather than addressing vulnerabilities.<br>
+<strong>Category:</strong> refactor</p><p><li><strong>Interestingness:</strong> 21.2</li><br>
+<li><strong>Match score:</strong> 0.6686 (name_exact)</li><br>
+<li><strong>Triage confidence:</strong> 0.0</li><br>
+<li><strong>Size:</strong> 412 -&gt; 216 (-47.6%)</li><br>
+<li><strong>Blocks:</strong> 22 -&gt; 8 (-14)</li><br>
+<li><strong>Instructions:</strong> 103 -&gt; 54 (-49)</li></p><p><strong>Heuristic Rationale:</strong><br>
+<li>Large size change (-47.6%) without clear security signals</li></p><p>  Ext calls removed: <code>_putchar</code>, <code>_strtol</code><br>
+  Strings added: ['=== mini_server v2.0 ===']<br>
+  Strings removed: ['=== mini_server v1.0 ===']</p><p><hr></p><p><h3>5. <code>_parse_header_line</code> <span class="badge">SEC-POSSIBLE</span></h3></p><p><div class="vuln-box"><strong>HIGH</strong> | <strong>CWE-120</strong> — Buffer Overflow</div><br>
+<div class="vuln-box">Fix confidence: likely</div><br>
+<div class="vuln-box">Attack surface: An attacker could exploit buffer overflows by providing excessively long input strings to overflow the buffer via the _strcpy function.</div></p><p><strong>LLM Analysis:</strong> The function _parse_header_line replaced the unsafe _strcpy function with _strncpy, which is a safer alternative that likely includes size limits to prevent buffer overflows. Additional comparisons and branches were added, suggesting checks for string lengths, along with calls to _strlen for measuring string sizes. This change matters because it mitigates potential memory corruption vulnerabilities that could be exploited through malformed input.<br>
+<strong>Category:</strong> memory_safety</p><p><li><strong>Interestingness:</strong> 15.3</li><br>
+<li><strong>Match score:</strong> 0.7309 (name_exact)</li><br>
+<li><strong>Triage confidence:</strong> 0.38</li><br>
+<li><strong>Size:</strong> 124 -&gt; 168 (+35.5%)</li><br>
+<li><strong>Blocks:</strong> 6 -&gt; 7 (+1)</li><br>
+<li><strong>Instructions:</strong> 31 -&gt; 42 (+11)</li></p><p><strong>Heuristic Rationale:</strong><br>
+<li>Replaced unsafe <code>_strcpy</code> with <code>_strncpy</code></li></p><p>  Ext calls added: <code>_strlen</code>, <code>_strncpy</code><br>
+  Ext calls removed: <code>_strcpy</code></p><p><hr></p><p><h3>6. <code>_format_log_entry</code> <span class="badge">SEC-POSSIBLE</span></h3></p><p><div class="vuln-box"><strong>HIGH</strong> | <strong>CWE-120</strong> — Buffer Overflow</div><br>
+<div class="vuln-box">Fix confidence: likely</div><br>
+<div class="vuln-box">Attack surface: An attacker could exploit the buffer overflow in _sprintf by providing overly long inputs to overflow the buffer, potentially leading to arbitrary code execution or data corruption.</div></p><p><strong>LLM Analysis:</strong> The function _format_log_entry replaced the unsafe _sprintf call with _snprintf, as indicated by the addition and removal of these calls in the evidence. This change suggests an effort to mitigate potential buffer overflow risks associated with unbounded string formatting. It matters because _sprintf can lead to memory corruption if inputs exceed buffer limits, while _snprintf provides safer bounds checking.<br>
+<strong>Category:</strong> memory_safety</p><p><li><strong>Interestingness:</strong> 6.5</li><br>
+<li><strong>Match score:</strong> 0.7 (name_exact)</li><br>
+<li><strong>Triage confidence:</strong> 0.38</li><br>
+<li><strong>Size:</strong> 44 -&gt; 44 (+0.0%)</li><br>
+<li><strong>Blocks:</strong> 1 -&gt; 1 (+0)</li><br>
+<li><strong>Instructions:</strong> 11 -&gt; 11 (+0)</li></p><p><strong>Heuristic Rationale:</strong><br>
+<li>Replaced unsafe <code>_sprintf</code> with <code>_snprintf</code></li></p><p>  Ext calls added: <code>_snprintf</code><br>
+  Ext calls removed: <code>_sprintf</code></p><p><hr></p><p><h3>7. <code>_print_request</code> <span class="badge">SEC-POSSIBLE</span></h3></p><p><div class="vuln-box"><strong>HIGH</strong> | <strong>CWE-120</strong> — Buffer Overflow</div><br>
+<div class="vuln-box">Fix confidence: likely</div><br>
+<div class="vuln-box">Attack surface: An attacker could exploit buffer overflows by providing input that exceeds buffer limits in the _print_request function before the fix.</div></p><p><strong>LLM Analysis:</strong> In the _print_request function, the call to ___sprintf_chk was replaced with _snprintf, as indicated by the added and removed external/internal calls. This change reduces the function size and instruction count slightly, suggesting a targeted optimization for safety. It matters because ___sprintf_chk is considered unsafe and could lead to vulnerabilities like buffer overflows, while _snprintf provides better bounds checking to mitigate such risks.<br>
+<strong>Category:</strong> memory_safety</p><p><li><strong>Interestingness:</strong> 6.5</li><br>
+<li><strong>Match score:</strong> 0.8422 (name_exact)</li><br>
+<li><strong>Triage confidence:</strong> 0.38</li><br>
+<li><strong>Size:</strong> 320 -&gt; 316 (-1.2%)</li><br>
+<li><strong>Blocks:</strong> 8 -&gt; 8 (+0)</li><br>
+<li><strong>Instructions:</strong> 80 -&gt; 79 (-1)</li></p><p><strong>Heuristic Rationale:</strong><br>
+<li>Replaced unsafe <code>___sprintf_chk</code> with <code>_snprintf</code></li></p><p>  Ext calls added: <code>_snprintf</code><br>
+  Ext calls removed: <code>___sprintf_chk</code></p><p><hr></p><p><h2>Unmatched Functions</h2></p><p><h3>New in B (2)</h3><br>
+<li><code>_parse_content_length</code></li><br>
+<li><code>_validate_path</code></li></p><p><h3>Removed from A (1)</h3><br>
+<li><code>_log_request</code></li><br>
+
+</body>
+</html>

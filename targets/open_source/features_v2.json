@@ -1,0 +1,969 @@
+{
+  "binary": "/Users/marty/patchdiff-cli/targets/open_source/server_v2",
+  "arch": "AARCH64",
+  "num_functions": 10,
+  "functions": [
+    {
+      "name": "_format_log_entry",
+      "entry": "100000460",
+      "size": 44,
+      "instr_count": 11,
+      "block_count": 1,
+      "mnemonic_hist": {
+        "sub": 1,
+        "stp": 2,
+        "add": 3,
+        "str": 1,
+        "adrp": 1,
+        "bl": 1,
+        "ldp": 1,
+        "ret": 1
+      },
+      "mnemonic_bigrams": {
+        "sub,stp": 1,
+        "stp,add": 1,
+        "add,stp": 1,
+        "stp,str": 1,
+        "str,adrp": 1,
+        "adrp,add": 1,
+        "add,bl": 1,
+        "bl,ldp": 1,
+        "ldp,add": 1,
+        "add,ret": 1
+      },
+      "strings": [
+        "[%d] %s %s"
+      ],
+      "constants": [],
+      "called_functions": [
+        {
+          "name": "_snprintf",
+          "is_external": true
+        }
+      ],
+      "callers": []
+    },
+    {
+      "name": "_parse_header_line",
+      "entry": "10000048c",
+      "size": 168,
+      "instr_count": 42,
+      "block_count": 7,
+      "mnemonic_hist": {
+        "stp": 3,
+        "add": 2,
+        "mov": 16,
+        "bl": 4,
+        "cbz": 1,
+        "sub": 2,
+        "cmn": 1,
+        "b.cs": 1,
+        "b": 1,
+        "strb": 2,
+        "ldrb": 1,
+        "cmp": 2,
+        "b.eq": 1,
+        "csel": 1,
+        "ldp": 3,
+        "ret": 1
+      },
+      "mnemonic_bigrams": {
+        "stp,stp": 2,
+        "stp,add": 1,
+        "add,mov": 2,
+        "mov,mov": 8,
+        "mov,bl": 4,
+        "bl,cbz": 1,
+        "cbz,mov": 1,
+        "mov,sub": 1,
+        "sub,sub": 1,
+        "sub,cmn": 1,
+        "cmn,b.cs": 1,
+        "b.cs,mov": 1,
+        "mov,b": 1,
+        "b,mov": 1,
+        "bl,strb": 1,
+        "strb,ldrb": 1,
+        "ldrb,cmp": 1,
+        "cmp,b.eq": 1,
+        "b.eq,mov": 1,
+        "bl,mov": 2,
+        "mov,cmp": 1,
+        "cmp,csel": 1,
+        "csel,add": 1,
+        "mov,strb": 1,
+        "strb,ldp": 1,
+        "ldp,ldp": 2,
+        "ldp,ret": 1
+      },
+      "strings": [],
+      "constants": [],
+      "called_functions": [
+        {
+          "name": "_strncpy",
+          "is_external": true
+        },
+        {
+          "name": "_strlen",
+          "is_external": true
+        },
+        {
+          "name": "___strncpy_chk",
+          "is_external": true
+        },
+        {
+          "name": "_strchr",
+          "is_external": true
+        }
+      ],
+      "callers": []
+    },
+    {
+      "name": "_parse_content_length",
+      "entry": "100000534",
+      "size": 212,
+      "instr_count": 53,
+      "block_count": 10,
+      "mnemonic_hist": {
+        "sub": 1,
+        "stp": 2,
+        "add": 5,
+        "mov": 6,
+        "adrp": 6,
+        "ldr": 11,
+        "str": 4,
+        "bl": 5,
+        "cbz": 1,
+        "cmp": 3,
+        "b.ne": 1,
+        "ldp": 2,
+        "ret": 1,
+        "b.eq": 1,
+        "ldrb": 1,
+        "cbnz": 1,
+        "b.ls": 1,
+        "b": 1
+      },
+      "mnemonic_bigrams": {
+        "sub,stp": 1,
+        "stp,stp": 1,
+        "stp,add": 1,
+        "add,mov": 2,
+        "mov,adrp": 1,
+        "adrp,ldr": 4,
+        "ldr,ldr": 4,
+        "ldr,str": 3,
+        "str,bl": 1,
+        "bl,str": 1,
+        "str,add": 1,
+        "mov,mov": 1,
+        "mov,bl": 2,
+        "bl,mov": 2,
+        "bl,ldr": 1,
+        "ldr,cbz": 1,
+        "cbz,adrp": 1,
+        "str,adrp": 2,
+        "adrp,add": 2,
+        "add,bl": 1,
+        "mov,ldr": 1,
+        "ldr,adrp": 1,
+        "ldr,cmp": 2,
+        "cmp,b.ne": 1,
+        "b.ne,mov": 1,
+        "mov,ldp": 1,
+        "ldp,ldp": 1,
+        "ldp,add": 1,
+        "add,ret": 1,
+        "ret,ldr": 1,
+        "cmp,b.eq": 1,
+        "b.eq,ldrb": 1,
+        "ldrb,cbnz": 1,
+        "cbnz,cmp": 1,
+        "cmp,b.ls": 1,
+        "b.ls,adrp": 1,
+        "add,b": 1,
+        "b,bl": 1
+      },
+      "strings": [
+        "Invalid Content-Length value: %s\n",
+        "Content-Length out of range: %ld\n"
+      ],
+      "constants": [],
+      "called_functions": [
+        {
+          "name": "_strtol",
+          "is_external": true
+        },
+        {
+          "name": "_fprintf",
+          "is_external": true
+        },
+        {
+          "name": "___stack_chk_fail",
+          "is_external": true
+        },
+        {
+          "name": "___error",
+          "is_external": true
+        }
+      ],
+      "callers": [
+        "_parse_http_request"
+      ]
+    },
+    {
+      "name": "_validate_path",
+      "entry": "100000608",
+      "size": 120,
+      "instr_count": 30,
+      "block_count": 6,
+      "mnemonic_hist": {
+        "sub": 2,
+        "stp": 1,
+        "add": 5,
+        "cmn": 1,
+        "b.hi": 1,
+        "adrp": 5,
+        "ldr": 4,
+        "str": 1,
+        "bl": 3,
+        "b": 1,
+        "cbz": 1,
+        "mov": 3,
+        "ldp": 1,
+        "ret": 1
+      },
+      "mnemonic_bigrams": {
+        "sub,stp": 1,
+        "stp,add": 1,
+        "add,sub": 1,
+        "sub,cmn": 1,
+        "cmn,b.hi": 1,
+        "b.hi,adrp": 1,
+        "adrp,ldr": 2,
+        "ldr,ldr": 2,
+        "ldr,str": 1,
+        "str,adrp": 1,
+        "adrp,add": 3,
+        "add,bl": 2,
+        "bl,b": 1,
+        "b,adrp": 1,
+        "bl,cbz": 1,
+        "cbz,adrp": 1,
+        "ldr,adrp": 1,
+        "add,mov": 1,
+        "mov,mov": 1,
+        "mov,bl": 1,
+        "bl,mov": 1,
+        "mov,ldp": 1,
+        "ldp,add": 1,
+        "add,ret": 1
+      },
+      "strings": [
+        "Invalid path length: %zu\n",
+        "..",
+        "Path traversal detected\n"
+      ],
+      "constants": [],
+      "called_functions": [
+        {
+          "name": "_strstr",
+          "is_external": true
+        },
+        {
+          "name": "_fwrite",
+          "is_external": true
+        },
+        {
+          "name": "_fprintf",
+          "is_external": true
+        }
+      ],
+      "callers": []
+    },
+    {
+      "name": "_parse_request_line",
+      "entry": "100000680",
+      "size": 340,
+      "instr_count": 85,
+      "block_count": 12,
+      "mnemonic_hist": {
+        "sub": 4,
+        "stp": 4,
+        "add": 10,
+        "mov": 22,
+        "bl": 8,
+        "cbz": 3,
+        "cmp": 2,
+        "csel": 1,
+        "sxtw": 2,
+        "strb": 3,
+        "b.lt": 1,
+        "adrp": 7,
+        "ldr": 6,
+        "str": 2,
+        "b": 3,
+        "cmn": 1,
+        "b.hi": 1,
+        "ldp": 4,
+        "ret": 1
+      },
+      "mnemonic_bigrams": {
+        "sub,stp": 1,
+        "stp,stp": 3,
+        "stp,add": 1,
+        "add,mov": 6,
+        "mov,mov": 11,
+        "mov,bl": 7,
+        "bl,cbz": 3,
+        "cbz,sub": 2,
+        "sub,mov": 1,
+        "mov,cmp": 1,
+        "cmp,csel": 1,
+        "csel,sxtw": 1,
+        "sxtw,mov": 1,
+        "bl,strb": 2,
+        "strb,add": 2,
+        "sub,cmp": 1,
+        "cmp,b.lt": 1,
+        "b.lt,adrp": 1,
+        "adrp,ldr": 3,
+        "ldr,ldr": 3,
+        "ldr,str": 2,
+        "str,adrp": 2,
+        "adrp,add": 4,
+        "add,b": 1,
+        "b,sxtw": 1,
+        "sxtw,sub": 1,
+        "sub,cmn": 1,
+        "cmn,b.hi": 1,
+        "b.hi,adrp": 1,
+        "add,bl": 1,
+        "bl,mov": 2,
+        "mov,ldp": 1,
+        "ldp,ldp": 3,
+        "ldp,add": 1,
+        "add,ret": 1,
+        "ret,mov": 1,
+        "mov,adrp": 1,
+        "cbz,adrp": 1,
+        "ldr,adrp": 1,
+        "bl,b": 1,
+        "b,add": 1,
+        "add,add": 1,
+        "mov,strb": 1,
+        "strb,b": 1
+      },
+      "strings": [
+        "Request path too long: %d bytes\n",
+        "Invalid path length: %zu\n",
+        "..",
+        "Path traversal detected\n"
+      ],
+      "constants": [],
+      "called_functions": [
+        {
+          "name": "_strstr",
+          "is_external": true
+        },
+        {
+          "name": "_strncpy",
+          "is_external": true
+        },
+        {
+          "name": "_fwrite",
+          "is_external": true
+        },
+        {
+          "name": "_fprintf",
+          "is_external": true
+        },
+        {
+          "name": "___strncpy_chk",
+          "is_external": true
+        },
+        {
+          "name": "_strchr",
+          "is_external": true
+        }
+      ],
+      "callers": [
+        "_parse_http_request"
+      ]
+    },
+    {
+      "name": "_url_decode",
+      "entry": "1000007d8",
+      "size": 372,
+      "instr_count": 93,
+      "block_count": 23,
+      "mnemonic_hist": {
+        "sub": 2,
+        "stp": 4,
+        "add": 11,
+        "mov": 12,
+        "adrp": 5,
+        "ldr": 10,
+        "str": 1,
+        "ldrb": 3,
+        "cmp": 6,
+        "ccmp": 2,
+        "b.eq": 3,
+        "b": 5,
+        "strb": 5,
+        "b.cs": 1,
+        "b.ne": 2,
+        "ldrsb": 2,
+        "tbnz": 2,
+        "ubfx": 2,
+        "cbnz": 2,
+        "cbz": 3,
+        "ldurh": 1,
+        "sturh": 1,
+        "bl": 3,
+        "ldp": 4,
+        "ret": 1
+      },
+      "mnemonic_bigrams": {
+        "sub,stp": 1,
+        "stp,stp": 3,
+        "stp,add": 1,
+        "add,mov": 3,
+        "mov,mov": 4,
+        "mov,adrp": 2,
+        "adrp,ldr": 4,
+        "ldr,ldr": 3,
+        "ldr,str": 1,
+        "str,sub": 1,
+        "sub,ldrb": 1,
+        "ldrb,cmp": 2,
+        "cmp,ccmp": 2,
+        "ccmp,b.eq": 1,
+        "b.eq,mov": 1,
+        "ldr,b": 1,
+        "b,strb": 1,
+        "strb,add": 3,
+        "add,add": 1,
+        "add,ldrb": 1,
+        "ccmp,b.cs": 1,
+        "b.cs,cmp": 1,
+        "cmp,b.eq": 2,
+        "b.eq,cmp": 1,
+        "cmp,b.ne": 2,
+        "b.ne,ldrsb": 1,
+        "ldrsb,tbnz": 2,
+        "tbnz,add": 2,
+        "add,ldr": 2,
+        "ldr,ubfx": 2,
+        "ubfx,cbnz": 1,
+        "cbnz,b": 1,
+        "b,mov": 3,
+        "mov,cbz": 1,
+        "cbz,ldrsb": 1,
+        "ubfx,cbz": 1,
+        "cbz,ldurh": 1,
+        "ldurh,sturh": 1,
+        "sturh,strb": 1,
+        "mov,bl": 2,
+        "bl,strb": 1,
+        "add,b": 1,
+        "mov,cbnz": 1,
+        "cbnz,cmp": 1,
+        "b.eq,add": 1,
+        "add,strb": 2,
+        "strb,b": 1,
+        "b,add": 1,
+        "strb,ldrb": 1,
+        "ldrb,cbz": 1,
+        "cbz,adrp": 1,
+        "ldr,adrp": 2,
+        "adrp,add": 1,
+        "bl,mov": 1,
+        "mov,b": 1,
+        "mov,ldr": 1,
+        "ldr,cmp": 1,
+        "b.ne,ldp": 1,
+        "ldp,ldp": 3,
+        "ldp,add": 1,
+        "add,ret": 1,
+        "ret,bl": 1
+      },
+      "strings": [
+        "URL decode: output buffer too small\n"
+      ],
+      "constants": [],
+      "called_functions": [
+        {
+          "name": "_strtol",
+          "is_external": true
+        },
+        {
+          "name": "_fwrite",
+          "is_external": true
+        },
+        {
+          "name": "___stack_chk_fail",
+          "is_external": true
+        }
+      ],
+      "callers": [
+        "entry"
+      ]
+    },
+    {
+      "name": "_parse_http_request",
+      "entry": "10000094c",
+      "size": 788,
+      "instr_count": 197,
+      "block_count": 37,
+      "mnemonic_hist": {
+        "sub": 3,
+        "stp": 8,
+        "add": 19,
+        "mov": 50,
+        "bl": 29,
+        "cbz": 10,
+        "cmp": 8,
+        "b.ls": 1,
+        "adrp": 15,
+        "ldr": 12,
+        "str": 6,
+        "b": 7,
+        "ldp": 6,
+        "ret": 1,
+        "tbnz": 2,
+        "ldrb": 2,
+        "ldrsw": 2,
+        "b.ge": 1,
+        "cmn": 1,
+        "b.cc": 1,
+        "smaddl": 2,
+        "strb": 3,
+        "b.eq": 1,
+        "csel": 1,
+        "cbnz": 1,
+        "tbz": 1,
+        "b.lt": 1,
+        "b.le": 1,
+        "b.cs": 2
+      },
+      "mnemonic_bigrams": {
+        "sub,stp": 1,
+        "stp,stp": 5,
+        "stp,add": 1,
+        "add,mov": 9,
+        "mov,mov": 12,
+        "mov,bl": 22,
+        "bl,mov": 11,
+        "mov,cbz": 2,
+        "cbz,mov": 6,
+        "bl,cmp": 2,
+        "cmp,b.ls": 1,
+        "b.ls,adrp": 1,
+        "adrp,ldr": 5,
+        "ldr,ldr": 5,
+        "ldr,str": 1,
+        "str,adrp": 2,
+        "adrp,add": 10,
+        "bl,b": 3,
+        "b,mov": 2,
+        "bl,cbz": 6,
+        "cbz,adrp": 1,
+        "mov,ldp": 1,
+        "ldp,ldp": 5,
+        "ldp,add": 1,
+        "add,ret": 1,
+        "ret,adrp": 1,
+        "mov,add": 2,
+        "mov,adrp": 2,
+        "add,b": 1,
+        "b,adrp": 3,
+        "ldr,adrp": 1,
+        "bl,tbnz": 1,
+        "tbnz,ldr": 1,
+        "ldr,add": 1,
+        "add,str": 1,
+        "str,mov": 1,
+        "cbz,ldrb": 1,
+        "ldrb,cbz": 1,
+        "cbz,ldrsw": 1,
+        "ldrsw,cmp": 1,
+        "cmp,b.ge": 1,
+        "b.ge,mov": 1,
+        "mov,sub": 1,
+        "sub,sub": 1,
+        "sub,cmn": 1,
+        "cmn,b.cc": 1,
+        "b.cc,smaddl": 1,
+        "smaddl,mov": 2,
+        "bl,strb": 3,
+        "strb,ldrb": 1,
+        "ldrb,cmp": 1,
+        "cmp,b.eq": 1,
+        "b.eq,mov": 1,
+        "cmp,mov": 2,
+        "mov,csel": 1,
+        "csel,add": 1,
+        "strb,ldrsw": 1,
+        "ldrsw,smaddl": 1,
+        "add,bl": 7,
+        "bl,cbnz": 1,
+        "cbnz,add": 1,
+        "mov,tbnz": 1,
+        "tbnz,str": 1,
+        "str,tbz": 1,
+        "tbz,b": 1,
+        "ldr,mov": 2,
+        "mov,str": 1,
+        "bl,ldr": 1,
+        "ldr,cmp": 1,
+        "cmp,b.lt": 1,
+        "b.lt,cmp": 1,
+        "cmp,b.le": 1,
+        "b.le,adrp": 1,
+        "mov,stp": 1,
+        "stp,adrp": 2,
+        "mov,cmp": 1,
+        "cmp,b.cs": 1,
+        "b.cs,adrp": 1,
+        "ldr,stp": 1,
+        "mov,b": 2,
+        "b,add": 1,
+        "bl,str": 1,
+        "str,cbz": 1,
+        "cbz,add": 1,
+        "strb,str": 1,
+        "str,cmp": 1,
+        "mov,b.cs": 1,
+        "b.cs,mov": 1
+      },
+      "strings": [
+        "Request too large: %zu bytes\n",
+        "\r\n",
+        "\r\n",
+        "Rejecting request: bad Content-Length\n",
+        "\r\n",
+        "Content-Length",
+        "Too many headers (max %d)\n",
+        "Body too large: %d bytes (max %d)\n",
+        "\r\n\r\n",
+        "Incomplete body: expected %d, got %zu\n"
+      ],
+      "constants": [],
+      "called_functions": [
+        {
+          "name": "_free",
+          "is_external": true
+        },
+        {
+          "name": "_strcasecmp",
+          "is_external": true
+        },
+        {
+          "name": "_memcpy",
+          "is_external": true
+        },
+        {
+          "name": "_strstr",
+          "is_external": true
+        },
+        {
+          "name": "_strncpy",
+          "is_external": true
+        },
+        {
+          "name": "_strlen",
+          "is_external": true
+        },
+        {
+          "name": "_strdup",
+          "is_external": true
+        },
+        {
+          "name": "_fwrite",
+          "is_external": true
+        },
+        {
+          "name": "_fprintf",
+          "is_external": true
+        },
+        {
+          "name": "_strchr",
+          "is_external": true
+        },
+        {
+          "name": "_bzero",
+          "is_external": true
+        },
+        {
+          "name": "_strtok",
+          "is_external": true
+        },
+        {
+          "name": "_malloc",
+          "is_external": true
+        },
+        {
+          "name": "_parse_content_length",
+          "is_external": false
+        },
+        {
+          "name": "___strncpy_chk",
+          "is_external": true
+        },
+        {
+          "name": "_parse_request_line",
+          "is_external": false
+        }
+      ],
+      "callers": [
+        "entry"
+      ]
+    },
+    {
+      "name": "_free_request",
+      "entry": "100000c60",
+      "size": 52,
+      "instr_count": 13,
+      "block_count": 3,
+      "mnemonic_hist": {
+        "cbz": 1,
+        "stp": 2,
+        "add": 1,
+        "ldr": 1,
+        "mov": 3,
+        "bl": 1,
+        "ldp": 2,
+        "b": 1,
+        "ret": 1
+      },
+      "mnemonic_bigrams": {
+        "cbz,stp": 1,
+        "stp,stp": 1,
+        "stp,add": 1,
+        "add,ldr": 1,
+        "ldr,mov": 1,
+        "mov,mov": 1,
+        "mov,bl": 1,
+        "bl,mov": 1,
+        "mov,ldp": 1,
+        "ldp,ldp": 1,
+        "ldp,b": 1,
+        "b,ret": 1
+      },
+      "strings": [],
+      "constants": [],
+      "called_functions": [
+        {
+          "name": "_free",
+          "is_external": true
+        }
+      ],
+      "callers": []
+    },
+    {
+      "name": "_print_request",
+      "entry": "100000c94",
+      "size": 316,
+      "instr_count": 79,
+      "block_count": 8,
+      "mnemonic_hist": {
+        "stp": 7,
+        "add": 17,
+        "sub": 2,
+        "mov": 5,
+        "adrp": 10,
+        "ldr": 8,
+        "stur": 1,
+        "str": 6,
+        "bl": 9,
+        "cmp": 3,
+        "b.lt": 2,
+        "ldrsw": 1,
+        "cbz": 1,
+        "ldur": 1,
+        "b.ne": 1,
+        "ldp": 4,
+        "ret": 1
+      },
+      "mnemonic_bigrams": {
+        "stp,stp": 3,
+        "stp,add": 1,
+        "add,sub": 2,
+        "sub,mov": 1,
+        "mov,adrp": 1,
+        "adrp,ldr": 2,
+        "ldr,ldr": 2,
+        "ldr,stur": 1,
+        "stur,add": 1,
+        "add,stp": 1,
+        "stp,mov": 2,
+        "mov,str": 1,
+        "str,adrp": 6,
+        "adrp,add": 8,
+        "add,add": 2,
+        "add,mov": 1,
+        "mov,bl": 2,
+        "bl,str": 3,
+        "add,bl": 6,
+        "bl,add": 2,
+        "add,str": 1,
+        "bl,ldr": 2,
+        "ldr,str": 1,
+        "ldr,cmp": 2,
+        "cmp,b.lt": 2,
+        "b.lt,mov": 1,
+        "mov,add": 1,
+        "add,adrp": 1,
+        "sub,stp": 1,
+        "add,ldrsw": 1,
+        "ldrsw,add": 1,
+        "add,cmp": 1,
+        "b.lt,ldr": 1,
+        "ldr,cbz": 1,
+        "cbz,ldr": 1,
+        "ldr,stp": 1,
+        "stp,adrp": 1,
+        "bl,ldur": 1,
+        "ldur,adrp": 1,
+        "cmp,b.ne": 1,
+        "b.ne,add": 1,
+        "add,ldp": 1,
+        "ldp,ldp": 3,
+        "ldp,ret": 1,
+        "ret,bl": 1
+      },
+      "strings": [
+        "[%d] %s %s",
+        "Log: %s\n",
+        "Method: %s\n",
+        "Path: %s\n",
+        "Version: %s\n",
+        "Headers (%d):\n",
+        "  %s: %s\n",
+        "Body (%d bytes): %s\n"
+      ],
+      "constants": [],
+      "called_functions": [
+        {
+          "name": "_printf",
+          "is_external": true
+        },
+        {
+          "name": "___stack_chk_fail",
+          "is_external": true
+        },
+        {
+          "name": "_snprintf",
+          "is_external": true
+        }
+      ],
+      "callers": [
+        "entry"
+      ]
+    },
+    {
+      "name": "entry",
+      "entry": "100000dd0",
+      "size": 216,
+      "instr_count": 54,
+      "block_count": 8,
+      "mnemonic_hist": {
+        "sub": 1,
+        "stp": 2,
+        "add": 11,
+        "adrp": 9,
+        "ldr": 5,
+        "stur": 1,
+        "bl": 11,
+        "cbz": 1,
+        "mov": 4,
+        "b": 1,
+        "cbnz": 1,
+        "str": 1,
+        "ldur": 1,
+        "cmp": 1,
+        "b.ne": 1,
+        "ldp": 2,
+        "ret": 1
+      },
+      "mnemonic_bigrams": {
+        "sub,stp": 1,
+        "stp,stp": 1,
+        "stp,add": 1,
+        "add,adrp": 1,
+        "adrp,ldr": 2,
+        "ldr,ldr": 2,
+        "ldr,stur": 1,
+        "stur,adrp": 1,
+        "adrp,add": 7,
+        "add,bl": 6,
+        "bl,adrp": 4,
+        "bl,cbz": 1,
+        "cbz,mov": 1,
+        "mov,bl": 3,
+        "bl,ldr": 1,
+        "ldr,bl": 1,
+        "bl,mov": 1,
+        "bl,b": 1,
+        "b,adrp": 1,
+        "add,add": 2,
+        "add,mov": 1,
+        "bl,cbnz": 1,
+        "cbnz,str": 1,
+        "str,adrp": 1,
+        "bl,ldur": 1,
+        "ldur,adrp": 1,
+        "ldr,cmp": 1,
+        "cmp,b.ne": 1,
+        "b.ne,mov": 1,
+        "mov,ldp": 1,
+        "ldp,ldp": 1,
+        "ldp,add": 1,
+        "add,ret": 1,
+        "ret,bl": 1
+      },
+      "strings": [
+        "=== mini_server v2.0 ===",
+        "Parsing test request...",
+        "GET /index.html HTTP/1.1\r\nHost: example.com\r\nUser-Agent: TestClient/1.0\r\nContent-Length: 13\r\n\r\nHello, World!",
+        "Client connected from 127.0.0.1",
+        "Failed to parse request",
+        "/path%20with%20spaces?q=hello+world",
+        "Decoded URL: %s\n"
+      ],
+      "constants": [],
+      "called_functions": [
+        {
+          "name": "_free",
+          "is_external": true
+        },
+        {
+          "name": "_url_decode",
+          "is_external": false
+        },
+        {
+          "name": "_parse_http_request",
+          "is_external": false
+        },
+        {
+          "name": "_print_request",
+          "is_external": false
+        },
+        {
+          "name": "_printf",
+          "is_external": true
+        },
+        {
+          "name": "_puts",
+          "is_external": true
+        },
+        {
+          "name": "___stack_chk_fail",
+          "is_external": true
+        }
+      ],
+      "callers": []
+    }
+  ]
+}

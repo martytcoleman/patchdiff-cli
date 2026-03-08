@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PatchTriage Report</title>
+<style>
+body { font-family: 'Courier New', monospace; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #1a1a2e; color: #e0e0e0; line-height: 1.6; }
+pre { white-space: pre-wrap; word-wrap: break-word; }
+</style>
+</head>
+<body>
+<pre># PatchTriage Diff Report
+
+**Generated:** 2026-03-07 00:03:37
+**Binary A:** `/Users/marty/patchdiff-cli/targets/open_source/server_v1`
+**Binary B:** `/Users/marty/patchdiff-cli/targets/open_source/server_v2`
+
+## Summary
+
+| Metric | Value |
+|--------|-------|
+| Matched functions | 8 |
+| Unmatched in A | 1 |
+| Unmatched in B | 2 |
+
+### Triage Breakdown
+
+| Label | Count |
+|-------|-------|
+| **[SEC-LIKELY]** | 2 |
+| **[SEC-POSSIBLE]** | 4 |
+| [REFACTOR] | 1 |
+| [UNCHANGED] | 1 |
+
+## Top 7 Changed Functions
+
+### 1. `_parse_http_request` **[SEC-LIKELY]**
+
+- **Interestingness:** 61.1
+- **Match score:** 0.6174 (name_exact)
+- **Triage confidence:** 0.75
+- **Size:** 456 -&gt; 788 (+72.8%)
+- **Blocks:** 24 -&gt; 37 (+13)
+- **Instructions:** 114 -&gt; 197 (+83)
+
+**Rationale:**
+- Replaced unsafe `_strcpy` with `_strncpy`
+- Added error/validation string(s): ['Rejecting request: bad Content-Length\n']
+- Added 13 blocks, 6 cmp(s), 20 branch(es) — possible new validation paths
+
+  Ext calls added: `_fprintf`, `_fwrite`, `_strlen`, `_strncpy`
+  Ext calls removed: `_atoi`, `_strcpy`
+  Strings added: ['Body too large: %d bytes (max %d)\n', 'Incomplete body: expected %d, got %zu\n', 'Rejecting request: bad Content-Length\n', 'Request too large: %zu bytes\n', 'Too many headers (max %d)\n']
+
+---
+
+### 2. `_parse_request_line` **[SEC-LIKELY]**
+
+- **Interestingness:** 38.7
+- **Match score:** 0.4065 (name_exact)
+- **Triage confidence:** 0.75
+- **Size:** 196 -&gt; 340 (+73.5%)
+- **Blocks:** 5 -&gt; 12 (+7)
+- **Instructions:** 49 -&gt; 85 (+36)
+
+**Rationale:**
+- Replaced unsafe `___strcpy_chk` with `_strncpy`
+- Added error/validation string(s): ['Invalid path length: %zu\n']
+- Added 7 blocks, 2 cmp(s), 7 branch(es) — possible new validation paths
+
+  Ext calls added: `_fprintf`, `_fwrite`, `_strncpy`, `_strstr`
+  Ext calls removed: `___strcpy_chk`
+  Strings added: ['..', 'Invalid path length: %zu\n', 'Path traversal detected\n', 'Request path too long: %d bytes\n']
+
+---
+
+### 3. `_url_decode` **[SEC-POSSIBLE]**
+
+- **Interestingness:** 22.3
+- **Match score:** 0.4782 (name_exact)
+- **Triage confidence:** 0.38
+- **Size:** 232 -&gt; 372 (+60.3%)
+- **Blocks:** 17 -&gt; 23 (+6)
+- **Instructions:** 58 -&gt; 93 (+35)
+
+**Rationale:**
+- Added error/validation string(s): ['URL decode: output buffer too small\n']
+- Added 6 blocks, 3 cmp(s), 4 branch(es) — possible new validation paths
+
+  Ext calls added: `___stack_chk_fail`, `_fwrite`
+  Strings added: ['URL decode: output buffer too small\n']
+
+---
+
+### 4. `entry` [REFACTOR]
+
+- **Interestingness:** 21.2
+- **Match score:** 0.6686 (name_exact)
+- **Triage confidence:** 0.0
+- **Size:** 412 -&gt; 216 (-47.6%)
+- **Blocks:** 22 -&gt; 8 (-14)
+- **Instructions:** 103 -&gt; 54 (-49)
+
+**Rationale:**
+- Large size change (-47.6%) without clear security signals
+
+  Ext calls removed: `_putchar`, `_strtol`
+  Strings added: ['=== mini_server v2.0 ===']
+  Strings removed: ['=== mini_server v1.0 ===']
+
+---
+
+### 5. `_parse_header_line` **[SEC-POSSIBLE]**
+
+- **Interestingness:** 15.3
+- **Match score:** 0.7309 (name_exact)
+- **Triage confidence:** 0.38
+- **Size:** 124 -&gt; 168 (+35.5%)
+- **Blocks:** 6 -&gt; 7 (+1)
+- **Instructions:** 31 -&gt; 42 (+11)
+
+**Rationale:**
+- Replaced unsafe `_strcpy` with `_strncpy`
+
+  Ext calls added: `_strlen`, `_strncpy`
+  Ext calls removed: `_strcpy`
+
+---
+
+### 6. `_format_log_entry` **[SEC-POSSIBLE]**
+
+- **Interestingness:** 6.5
+- **Match score:** 0.7 (name_exact)
+- **Triage confidence:** 0.38
+- **Size:** 44 -&gt; 44 (+0.0%)
+- **Blocks:** 1 -&gt; 1 (+0)
+- **Instructions:** 11 -&gt; 11 (+0)
+
+**Rationale:**
+- Replaced unsafe `_sprintf` with `_snprintf`
+
+  Ext calls added: `_snprintf`
+  Ext calls removed: `_sprintf`
+
+---
+
+### 7. `_print_request` **[SEC-POSSIBLE]**
+
+- **Interestingness:** 6.5
+- **Match score:** 0.8422 (name_exact)
+- **Triage confidence:** 0.38
+- **Size:** 320 -&gt; 316 (-1.2%)
+- **Blocks:** 8 -&gt; 8 (+0)
+- **Instructions:** 80 -&gt; 79 (-1)
+
+**Rationale:**
+- Replaced unsafe `___sprintf_chk` with `_snprintf`
+
+  Ext calls added: `_snprintf`
+  Ext calls removed: `___sprintf_chk`
+
+---
+
+## Unmatched Functions
+
+### New in B (2)
+- `_parse_content_length`
+- `_validate_path`
+
+### Removed from A (1)
+- `_log_request`
+</pre>
+</body>
+</html>

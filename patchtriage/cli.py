@@ -2,109 +2,161 @@
 
 import argparse
 import json
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 
-def cmd_extract(args):
-    """Extract features from a binary using Ghidra headless."""
+def _run_pipeline(binary_a: str, binary_b: str, *,
+                  outdir: str | None = None,
+                  llm: bool = False,
+                  provider: str | None = None,
+                  api_key: str | None = None,
+                  top: int = 30,
+                  html: bool = False,
+                  threshold: float = 0.3,
+                  ghidra: str | None = None):
+    """Core pipeline: extract -> diff -> triage -> (llm) -> report."""
     from .extract import run_extract
-    run_extract(args.binary, args.output, ghidra_path=args.ghidra)
-
-
-def cmd_diff(args):
-    """Diff two feature files and produce match + change analysis."""
     from .matcher import match_functions
     from .analyzer import analyze_diff
+    from .triage import triage_diff
+    from .report import generate_markdown, generate_html
+    from .console import print_report, _c, DIM, CYAN, BOLD, GREEN, RED
 
-    with open(args.features_a) as f:
-        feat_a = json.load(f)
-    with open(args.features_b) as f:
-        feat_b = json.load(f)
+    binary_a = os.path.abspath(binary_a)
+    binary_b = os.path.abspath(binary_b)
 
-    print(f"Matching {feat_a['num_functions']} vs {feat_b['num_functions']} functions...")
-    match_data = match_functions(feat_a, feat_b, threshold=args.threshold)
-    print(f"  {match_data['num_matches']} matched, "
-          f"{match_data['num_unmatched_a']} unmatched in A, "
-          f"{match_data['num_unmatched_b']} unmatched in B")
+    # Determine output directory
+    if outdir:
+        os.makedirs(outdir, exist_ok=True)
+    else:
+        outdir = os.path.dirname(binary_a) or "."
 
-    print("Analyzing changes...")
+    name_a = Path(binary_a).stem
+    name_b = Path(binary_b).stem
+    feat_a_path = os.path.join(outdir, f"{name_a}_features.json")
+    feat_b_path = os.path.join(outdir, f"{name_b}_features.json")
+    diff_path = os.path.join(outdir, "diff.json")
+
+    # ── Step 1: Extract ──
+    feat_a = run_extract(binary_a, feat_a_path, ghidra_path=ghidra)
+    feat_b = run_extract(binary_b, feat_b_path, ghidra_path=ghidra)
+
+    # ── Step 2: Match + Analyze ──
+    print(f"\nMatching {_c(BOLD, str(feat_a['num_functions']))} vs "
+          f"{_c(BOLD, str(feat_b['num_functions']))} functions...")
+    match_data = match_functions(feat_a, feat_b, threshold=threshold)
+    print(f"  {_c(GREEN, str(match_data['num_matches']))} matched, "
+          f"{_c(RED, str(match_data['num_unmatched_a']))} unmatched in A, "
+          f"{_c(RED, str(match_data['num_unmatched_b']))} unmatched in B")
+
+    print(f"{_c(DIM, 'Analyzing changes...')}")
     diff_data = analyze_diff(feat_a, feat_b, match_data)
 
-    with open(args.output, "w") as f:
+    with open(diff_path, "w") as f:
         json.dump(diff_data, f, indent=2, default=str)
-    print(f"Diff written to {args.output}")
+
+    # ── Step 3: Triage ──
+    print(f"{_c(DIM, 'Running triage heuristics...')}")
+    diff_data = triage_diff(diff_data)
+
+    # ── Step 4: LLM (if requested) ──
+    if llm:
+        from .llm_explain import explain_top_functions, generate_executive_summary
+        diff_data = explain_top_functions(
+            diff_data, top_n=top, provider=provider, api_key=api_key,
+        )
+        exec_summary = generate_executive_summary(
+            diff_data, provider=provider, api_key=api_key,
+        )
+        if exec_summary:
+            diff_data["executive_summary"] = exec_summary
+
+    # ── Print to terminal ──
+    print_report(diff_data, top_n=top)
+
+    # ── Write files ──
+    md_path = os.path.join(outdir, "report.md")
+    md = generate_markdown(diff_data, top_n=top)
+    with open(md_path, "w") as f:
+        f.write(md)
+    print(f"{_c(DIM, 'Report written to')} {_c(CYAN, md_path)}")
+
+    if html:
+        html_path = os.path.join(outdir, "report.html")
+        html_content = generate_html(md)
+        with open(html_path, "w") as f:
+            f.write(html_content)
+        print(f"{_c(DIM, 'HTML written to')} {_c(CYAN, html_path)}")
+
+    json_path = os.path.join(outdir, "report.json")
+    with open(json_path, "w") as f:
+        json.dump(diff_data, f, indent=2, default=str)
+    print(f"{_c(DIM, 'Data written to')} {_c(CYAN, json_path)}")
+
+    return diff_data
+
+
+def cmd_run(args):
+    """Run full pipeline: extract -> diff -> triage -> report."""
+    _run_pipeline(
+        args.binary_a, args.binary_b,
+        outdir=args.outdir,
+        llm=args.llm,
+        provider=args.provider,
+        api_key=args.api_key,
+        top=args.top,
+        html=args.html,
+        threshold=args.threshold,
+        ghidra=args.ghidra,
+    )
 
 
 def cmd_report(args):
-    """Generate a Markdown report from diff.json."""
+    """Generate triage report from pre-computed diff.json."""
     from .triage import triage_diff
     from .report import generate_markdown, generate_html
+    from .console import print_report, _c, DIM, CYAN
 
     with open(args.diff_json) as f:
         diff_data = json.load(f)
 
-    print("Running triage heuristics...")
+    print(f"{_c(DIM, 'Running triage heuristics...')}")
     diff_data = triage_diff(diff_data)
 
-    md = generate_markdown(diff_data, top_n=args.top)
+    if args.llm:
+        from .llm_explain import explain_top_functions, generate_executive_summary
+        diff_data = explain_top_functions(
+            diff_data, top_n=args.top,
+            provider=args.provider, api_key=args.api_key,
+        )
+        exec_summary = generate_executive_summary(
+            diff_data, provider=args.provider, api_key=args.api_key,
+        )
+        if exec_summary:
+            diff_data["executive_summary"] = exec_summary
+
+    print_report(diff_data, top_n=args.top)
 
     output = args.output or args.diff_json.replace(".json", "_report.md")
+    md = generate_markdown(diff_data, top_n=args.top)
     with open(output, "w") as f:
         f.write(md)
-    print(f"Report written to {output}")
+    print(f"{_c(DIM, 'Report written to')} {_c(CYAN, output)}")
 
     if args.html:
         html_path = output.replace(".md", ".html")
         html = generate_html(md)
         with open(html_path, "w") as f:
             f.write(html)
-        print(f"HTML report written to {html_path}")
+        print(f"{_c(DIM, 'HTML written to')} {_c(CYAN, html_path)}")
 
-    # Also save the triaged JSON back
-    triaged_path = args.diff_json.replace(".json", "_triaged.json")
-    with open(triaged_path, "w") as f:
+    json_path = args.diff_json.replace(".json", "_triaged.json")
+    with open(json_path, "w") as f:
         json.dump(diff_data, f, indent=2, default=str)
-    print(f"Triaged data written to {triaged_path}")
-
-
-def cmd_explain(args):
-    """Add LLM explanations to a diff report."""
-    from .triage import triage_diff
-    from .llm_explain import explain_top_functions
-    from .report import generate_markdown
-
-    with open(args.diff_json) as f:
-        diff_data = json.load(f)
-
-    # Ensure triage is applied
-    diff_data = triage_diff(diff_data)
-
-    # Add LLM explanations
-    diff_data = explain_top_functions(diff_data, top_n=args.top, api_key=args.api_key)
-
-    # Update the report to include LLM summaries
-    md = generate_markdown(diff_data, top_n=args.top)
-
-    # Append LLM summaries section
-    lines = [md, "", "## LLM Explanations", ""]
-    for func in diff_data.get("functions", []):
-        if "llm_summary" in func:
-            lines.append(f"### `{func['name_a']}`")
-            lines.append(f"**Category:** {func.get('llm_category', 'unknown')}")
-            lines.append(f"**Summary:** {func['llm_summary']}")
-            lines.append("")
-
-    full_report = "\n".join(lines)
-    output = args.output or args.diff_json.replace(".json", "_explained.md")
-    with open(output, "w") as f:
-        f.write(full_report)
-    print(f"Explained report written to {output}")
-
-    # Save enriched JSON
-    enriched_path = args.diff_json.replace(".json", "_explained.json")
-    with open(enriched_path, "w") as f:
-        json.dump(diff_data, f, indent=2, default=str)
+    print(f"{_c(DIM, 'Data written to')} {_c(CYAN, json_path)}")
 
 
 def main():
@@ -114,37 +166,36 @@ def main():
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    # --- extract ---
-    p_ext = sub.add_parser("extract", help="Extract features from a binary via Ghidra")
-    p_ext.add_argument("binary", help="Path to input binary")
-    p_ext.add_argument("-o", "--output", default="features.json", help="Output JSON path")
-    p_ext.add_argument("--ghidra", default=None, help="Path to analyzeHeadless")
-    p_ext.set_defaults(func=cmd_extract)
+    # --- run (primary command) ---
+    p_run = sub.add_parser("run", help="Full pipeline: binary A + binary B -> report")
+    p_run.add_argument("binary_a", help="Path to binary version A (before)")
+    p_run.add_argument("binary_b", help="Path to binary version B (after)")
+    p_run.add_argument("-o", "--outdir", default=None,
+                        help="Output directory (default: same dir as binary_a)")
+    p_run.add_argument("--top", type=int, default=30, help="Number of top functions to show")
+    p_run.add_argument("--html", action="store_true", help="Also generate HTML report")
+    p_run.add_argument("--llm", action="store_true",
+                        help="Enable LLM analysis (uses GROK_API_KEY or OPENAI_API_KEY from .env)")
+    p_run.add_argument("--provider", choices=["openai", "grok"], default=None,
+                        help="LLM provider (auto-detected from .env if not set)")
+    p_run.add_argument("--api-key", default=None, help="API key (or set in .env)")
+    p_run.add_argument("-t", "--threshold", type=float, default=0.3,
+                        help="Similarity threshold for matching (default: 0.3)")
+    p_run.add_argument("--ghidra", default=None, help="Path to Ghidra install directory")
+    p_run.set_defaults(func=cmd_run)
 
-    # --- diff ---
-    p_diff = sub.add_parser("diff", help="Diff two feature files")
-    p_diff.add_argument("features_a", help="Features JSON for binary A")
-    p_diff.add_argument("features_b", help="Features JSON for binary B")
-    p_diff.add_argument("-o", "--output", default="diff.json", help="Output diff JSON path")
-    p_diff.add_argument("-t", "--threshold", type=float, default=0.3,
-                        help="Minimum similarity threshold for matching (default: 0.3)")
-    p_diff.set_defaults(func=cmd_diff)
-
-    # --- report ---
-    p_rep = sub.add_parser("report", help="Generate report from diff JSON")
+    # --- report (from pre-computed diff.json) ---
+    p_rep = sub.add_parser("report", help="Report from pre-computed diff.json")
     p_rep.add_argument("diff_json", help="Path to diff.json")
     p_rep.add_argument("-o", "--output", default=None, help="Output report path")
     p_rep.add_argument("--top", type=int, default=30, help="Number of top functions to show")
     p_rep.add_argument("--html", action="store_true", help="Also generate HTML report")
+    p_rep.add_argument("--llm", action="store_true",
+                        help="Enable LLM analysis (uses GROK_API_KEY or OPENAI_API_KEY from .env)")
+    p_rep.add_argument("--provider", choices=["openai", "grok"], default=None,
+                        help="LLM provider (auto-detected from .env if not set)")
+    p_rep.add_argument("--api-key", default=None, help="API key (or set in .env)")
     p_rep.set_defaults(func=cmd_report)
-
-    # --- explain ---
-    p_exp = sub.add_parser("explain", help="Add LLM explanations to diff (optional)")
-    p_exp.add_argument("diff_json", help="Path to diff.json")
-    p_exp.add_argument("-o", "--output", default=None, help="Output report path")
-    p_exp.add_argument("--top", type=int, default=10, help="Number of functions to explain")
-    p_exp.add_argument("--api-key", default=None, help="OpenAI API key (or set OPENAI_API_KEY)")
-    p_exp.set_defaults(func=cmd_explain)
 
     args = parser.parse_args()
     args.func(args)

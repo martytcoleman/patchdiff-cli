@@ -110,14 +110,49 @@ Each function receives:
 - **rationale**: Bullet-point explanations for the label
 - **confidence**: 0.0–1.0 score based on accumulated heuristic evidence
 
-### Step 4: (Optional) LLM Explanations
+### Step 4: LLM-Powered Vulnerability Analysis
 
 ```bash
-export OPENAI_API_KEY="sk-..."
-patchtriage explain diff.json --top 10
+# Configure API keys in .env (supports both providers)
+echo 'GROK_API_KEY=xai-...' >> .env
+echo 'OPENAI_API_KEY=sk-...' >> .env
+
+# Run with auto-detected provider (prefers Grok if both keys present)
+patchtriage explain diff.json --top 10 --html
+
+# Or specify provider explicitly
+patchtriage explain diff.json --provider grok --top 10
+patchtriage explain diff.json --provider openai --top 10
 ```
 
-Sends structured evidence (not raw disassembly) to GPT-4o-mini for 2-4 sentence natural-language summaries. The LLM is constrained to only use provided evidence and categorizes changes into themes: `input_validation`, `memory_safety`, `crypto`, `logging`, `error_handling`, `feature_change`, `refactor`, `unknown`.
+This is what makes PatchTriage stand out from BinDiff/Diaphora. The LLM receives **structured evidence only** (no raw disassembly) and produces:
+
+**Per-function analysis:**
+- 2-4 sentence natural-language summary of what changed and why it matters
+- **CWE classification** (e.g., CWE-120 Buffer Overflow) when identifiable
+- **Fix confidence**: `confirmed` / `likely` / `possible` / `insufficient_evidence`
+- **Severity estimate**: critical / high / medium / low / info
+- **Attack surface** description (what an attacker could exploit pre-patch)
+- **Category**: `input_validation`, `memory_safety`, `integer_safety`, `format_string`, `path_traversal`, `auth`, `crypto`, `error_handling`, `resource_mgmt`, `feature_change`, `refactor`, `unknown`
+
+**Executive summary:**
+- Multi-paragraph overview of the entire patch
+- Security-critical changes with specific function names and vuln classes
+- Assessment of patch quality and completeness
+- Recommendations for further manual review
+
+**Supported LLM providers:**
+
+| Provider | Model | Env Variable | Notes |
+|----------|-------|-------------|-------|
+| Grok (xAI) | grok-3-mini-fast | `GROK_API_KEY` | Fast, good at security analysis |
+| OpenAI | gpt-4o-mini | `OPENAI_API_KEY` | Widely available |
+
+**Guardrails:**
+- System prompt constrains the LLM to only use provided evidence
+- If evidence is insufficient, the LLM is instructed to say so explicitly
+- JSON schema enforced on responses with robust parsing (handles markdown fences)
+- API keys loaded from `.env` via python-dotenv (never hardcoded)
 
 ## Output Files
 
@@ -128,7 +163,8 @@ Sends structured evidence (not raw disassembly) to GPT-4o-mini for 2-4 sentence 
 | `diff_triaged.json` | Diff data enriched with triage labels and rationale |
 | `diff_report.md` | Human-readable ranked report |
 | `diff_report.html` | HTML version of the report |
-| `diff_explained.md` | Report with LLM summaries appended |
+| `diff_explained.md` | Full report with LLM analysis, CWE classifications, and executive summary |
+| `diff_explained.json` | Enriched JSON with all LLM fields for programmatic use |
 
 ## JSON Schemas
 
@@ -245,6 +281,31 @@ Heuristics are intentionally **conservative and explainable**:
 - Confidence scores are calibrated so `security_fix_likely` requires multiple converging signals
 - False positive rate is prioritized over recall — better to miss a subtle fix than cry wolf
 
+## Evaluation: Real Binary Results
+
+### Open-Source Target: mini_server v1 -> v2 (ARM64 macOS, clang -O1)
+
+A deliberately vulnerable HTTP request parser (v1) was patched with security fixes (v2), compiled with `clang -O1` on ARM64, and analyzed through the full pipeline.
+
+**Extraction:** Ghidra 12.0 via pyghidra extracted 9 functions from v1 and 10 from v2.
+
+**Matching:** 8/9 functions matched (1 removed: `_log_request`), 2 new in v2 (`_parse_content_length`, `_validate_path`).
+
+**Triage results (all correct):**
+
+| Function | Label | Key Findings |
+|----------|-------|--------------|
+| `_parse_http_request` | SEC-LIKELY | `strcpy`->`strncpy`, +13 blocks, +6 cmp, 5 new error strings |
+| `_parse_request_line` | SEC-LIKELY | `strcpy_chk`->`strncpy`, path traversal check, +7 blocks |
+| `_url_decode` | SEC-POSSIBLE | `__stack_chk_fail` added, output buffer bounds check |
+| `_parse_header_line` | SEC-POSSIBLE | `strcpy`->`strncpy` (bounded header copy) |
+| `_format_log_entry` | SEC-POSSIBLE | `sprintf`->`snprintf` |
+| `_print_request` | SEC-POSSIBLE | `__sprintf_chk`->`snprintf` |
+| `entry` (main) | REFACTOR | -47.6% size (inlined url_decode test removed) |
+| `_free_request` | UNCHANGED | No changes detected |
+
+All security-relevant patches were correctly surfaced and ranked above non-security changes. The tool identified unsafe API replacements even through macOS symbol mangling (`___strcpy_chk` -> `_strncpy`).
+
 ## Limitations
 
 - **Inlining / LTO**: Aggressive inlining can split or merge functions across versions, breaking 1:1 matching
@@ -264,4 +325,3 @@ pytest tests/ -v
 ## License
 
 MIT
-# patchdiff-cli

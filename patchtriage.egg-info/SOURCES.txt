@@ -3,6 +3,7 @@ pyproject.toml
 patchtriage/__init__.py
 patchtriage/analyzer.py
 patchtriage/cli.py
+patchtriage/console.py
 patchtriage/extract.py
 patchtriage/llm_explain.py
 patchtriage/matcher.py

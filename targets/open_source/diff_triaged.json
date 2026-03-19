@@ -68,9 +68,11 @@
       "triage_rationale": [
         "Replaced unsafe `_strcpy` with `_strncpy`",
         "Added error/validation string(s): ['Rejecting request: bad Content-Length\\n']",
+        "Added checks and control-flow consistent with new input-validation or guard logic",
+        "Control-flow and comparison growth suggests new guard or parser logic",
         "Added 13 blocks, 6 cmp(s), 20 branch(es) \u2014 possible new validation paths"
       ],
-      "triage_confidence": 0.75
+      "triage_confidence": 1.0
     },
     {
       "name_a": "_parse_request_line",
@@ -126,9 +128,11 @@
       "triage_rationale": [
         "Replaced unsafe `___strcpy_chk` with `_strncpy`",
         "Added error/validation string(s): ['Invalid path length: %zu\\n']",
+        "Added checks and control-flow consistent with new input-validation or guard logic",
+        "Control-flow and comparison growth suggests new guard or parser logic",
         "Added 7 blocks, 2 cmp(s), 7 branch(es) \u2014 possible new validation paths"
       ],
-      "triage_confidence": 0.75
+      "triage_confidence": 1.0
     },
     {
       "name_a": "_url_decode",
@@ -173,58 +177,11 @@
       "triage_rationale": [
         "Added stack protection (`stack_chk_fail`)",
         "Added error/validation string(s): ['URL decode: output buffer too small\\n']",
+        "Added checks and control-flow consistent with new input-validation or guard logic",
+        "Control-flow and comparison growth suggests new guard or parser logic",
         "Added 6 blocks, 3 cmp(s), 4 branch(es) \u2014 possible new validation paths"
       ],
-      "triage_confidence": 0.69
-    },
-    {
-      "name_a": "entry",
-      "name_b": "entry",
-      "entry_a": "100000a0c",
-      "entry_b": "100000dd0",
-      "match_score": 0.6686,
-      "match_method": "name_exact",
-      "uncertain": false,
-      "interestingness": 21.2,
-      "signals": {
-        "size_a": 412,
-        "size_b": 216,
-        "size_delta": -196,
-        "size_delta_pct": -47.6,
-        "blocks_a": 22,
-        "blocks_b": 8,
-        "blocks_delta": -14,
-        "instr_a": 103,
-        "instr_b": 54,
-        "instr_delta": -49,
-        "strings_added": [
-          "=== mini_server v2.0 ==="
-        ],
-        "strings_removed": [
-          "=== mini_server v1.0 ==="
-        ],
-        "ext_calls_added": [],
-        "ext_calls_removed": [
-          "_putchar",
-          "_strtol"
-        ],
-        "calls_added": [
-          "_url_decode"
-        ],
-        "calls_removed": [
-          "_putchar",
-          "_strtol"
-        ],
-        "constants_added": [],
-        "constants_removed": [],
-        "branch_delta": -15,
-        "compare_delta": -3
-      },
-      "triage_label": "refactor",
-      "triage_rationale": [
-        "Large size change (-47.6%) without clear security signals"
-      ],
-      "triage_confidence": 0.0
+      "triage_confidence": 0.97
     },
     {
       "name_a": "_parse_header_line",
@@ -269,9 +226,10 @@
       },
       "triage_label": "security_fix_possible",
       "triage_rationale": [
-        "Replaced unsafe `_strcpy` with `_strncpy`"
+        "Replaced unsafe `_strcpy` with `_strncpy`",
+        "Control-flow and comparison growth suggests new guard or parser logic"
       ],
-      "triage_confidence": 0.38
+      "triage_confidence": 0.47
     },
     {
       "name_a": "_format_log_entry",
@@ -362,6 +320,55 @@
         "Replaced unsafe `___sprintf_chk` with `_snprintf`"
       ],
       "triage_confidence": 0.38
+    },
+    {
+      "name_a": "entry",
+      "name_b": "entry",
+      "entry_a": "100000a0c",
+      "entry_b": "100000dd0",
+      "match_score": 0.6686,
+      "match_method": "name_exact",
+      "uncertain": false,
+      "interestingness": 21.2,
+      "signals": {
+        "size_a": 412,
+        "size_b": 216,
+        "size_delta": -196,
+        "size_delta_pct": -47.6,
+        "blocks_a": 22,
+        "blocks_b": 8,
+        "blocks_delta": -14,
+        "instr_a": 103,
+        "instr_b": 54,
+        "instr_delta": -49,
+        "strings_added": [
+          "=== mini_server v2.0 ==="
+        ],
+        "strings_removed": [
+          "=== mini_server v1.0 ==="
+        ],
+        "ext_calls_added": [],
+        "ext_calls_removed": [
+          "_putchar",
+          "_strtol"
+        ],
+        "calls_added": [
+          "_url_decode"
+        ],
+        "calls_removed": [
+          "_putchar",
+          "_strtol"
+        ],
+        "constants_added": [],
+        "constants_removed": [],
+        "branch_delta": -15,
+        "compare_delta": -3
+      },
+      "triage_label": "refactor",
+      "triage_rationale": [
+        "Large size change (-47.6%) without clear security signals"
+      ],
+      "triage_confidence": 0.0
     },
     {
       "name_a": "_free_request",

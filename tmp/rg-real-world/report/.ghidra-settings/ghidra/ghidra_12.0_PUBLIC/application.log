@@ -1,0 +1,31 @@
+2026-03-19 13:13:39 INFO  (LoggingInitialization) Using log config file: jar:file:/Users/marty/ghidra_12.0_PUBLIC/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml  
+2026-03-19 13:13:39 INFO  (LoggingInitialization) Using log file: /Users/marty/patchdiff-cli/tmp/rg-real-world/report/.ghidra-settings/ghidra/ghidra_12.0_PUBLIC/application.log  
+2026-03-19 13:13:39 INFO  (Preferences) Loading user preferences: /Users/marty/patchdiff-cli/tmp/rg-real-world/report/.ghidra-settings/ghidra/ghidra_12.0_PUBLIC/preferences  
+2026-03-19 13:13:39 INFO  (ClassSearcher) Searching for classes...  
+2026-03-19 13:13:40 INFO  (ClassSearcher) Class search complete (1333 ms)  
+2026-03-19 13:13:40 INFO  (SSLContextInitializer) Initializing SSL Context  
+2026-03-19 13:13:40 INFO  (SecureRandomFactory) Initializing Random Number Generator...  
+2026-03-19 13:13:40 INFO  (SecureRandomFactory) Random Number Generator initialization complete: NativePRNGNonBlocking  
+2026-03-19 13:13:40 INFO  (ApplicationTrustManagerFactory) Trust manager disabled, cacerts have not been set  
+2026-03-19 13:13:40 DEBUG (DefaultProjectManager) No tools found; Installing default tools  
+2026-03-19 13:13:40 DEBUG (DefaultProjectManager) 	no recent project directories found  
+2026-03-19 13:13:41 INFO  (DefaultProject) Creating project: /Users/marty/patchdiff-cli/tmp/rg-real-world/report/rg_ghidra_4uoejdhk/rg_ghidra/rg_ghidra  
+2026-03-19 13:13:42 INFO  (ProgramLoader) Using Loader: Mac OS X Mach-O  
+2026-03-19 13:13:42 INFO  (ProgramLoader) Using Language/Compiler: AARCH64:LE:64:AppleSilicon:default  
+2026-03-19 13:13:42 INFO  (ProgramLoader) Using Library Search Path: [., /System/Library/dyld/dyld_shared_cache_arm64e, /System/Library/dyld/dyld_shared_cache_x86_64, /System/Library/dyld/dyld_shared_cache_x86_64h, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64h, /Users/marty/Library/Java/Extensions, /Library/Java/Extensions, /Network/Library/Java/Extensions, /System/Library/Java/Extensions, /usr/lib/java]  
+2026-03-19 13:13:45 INFO  (ProgramLoader) Additional info:
+Loading file:///Users/marty/patchdiff-cli/tmp/rg-real-world/ripgrep-14.1.0-aarch64-apple-darwin/rg?MD5=0f7a198cfeb9c68800087679cd77b20a...
+Discovered 22192 DYLD_CHAINED_PTR_64_OFFSET chained pointers.
+Fixed up 22192 chained pointers.
+Rust error: data/extensions/rust/unix64 does not exist in module AARCH64
+------------------------------------------------
+
+Linking the External Programs of 'rg' to imported libraries...
+  [/opt/homebrew/opt/pcre2/lib/libpcre2-8.0.dylib] -> not found in project
+  [/usr/lib/libiconv.2.dylib] -> not found in project
+  [/usr/lib/libSystem.B.dylib] -> not found in project
+------------------------------------------------
+
+  
+2026-03-19 13:13:45 INFO  (LocalFileSystem) /rg: file created (marty)  
+2026-03-19 13:13:48 INFO  (DecompilerSwitchAnalyzer) hit non-returning function, restarting decompiler switch analyzer later  

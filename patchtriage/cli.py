@@ -8,6 +8,11 @@ import tempfile
 from pathlib import Path
 
 
+def _write_json(path: str, data: dict):
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2, default=str)
+
+
 def _run_pipeline(binary_a: str, binary_b: str, *,
                   outdir: str | None = None,
                   llm: bool = False,
@@ -17,7 +22,8 @@ def _run_pipeline(binary_a: str, binary_b: str, *,
                   html: bool = False,
                   threshold: float = 0.3,
                   ghidra: str | None = None,
-                  stripped: bool = False):
+                  stripped: bool = False,
+                  force_extract: bool = False):
     """Core pipeline: extract -> diff -> triage -> (llm) -> report."""
     from .extract import run_extract
     from .matcher import match_functions
@@ -42,8 +48,8 @@ def _run_pipeline(binary_a: str, binary_b: str, *,
     diff_path = os.path.join(outdir, "diff.json")
 
     # ── Step 1: Extract ──
-    feat_a = run_extract(binary_a, feat_a_path, ghidra_path=ghidra)
-    feat_b = run_extract(binary_b, feat_b_path, ghidra_path=ghidra)
+    feat_a = run_extract(binary_a, feat_a_path, ghidra_path=ghidra, reuse_cached=not force_extract)
+    feat_b = run_extract(binary_b, feat_b_path, ghidra_path=ghidra, reuse_cached=not force_extract)
 
     # ── Step 2: Match + Analyze ──
     print(f"\nMatching {_c(BOLD, str(feat_a['num_functions']))} vs "
@@ -56,8 +62,7 @@ def _run_pipeline(binary_a: str, binary_b: str, *,
     print(f"{_c(DIM, 'Analyzing changes...')}")
     diff_data = analyze_diff(feat_a, feat_b, match_data)
 
-    with open(diff_path, "w") as f:
-        json.dump(diff_data, f, indent=2, default=str)
+    _write_json(diff_path, diff_data)
 
     # ── Step 3: Triage ──
     print(f"{_c(DIM, 'Running triage heuristics...')}")
@@ -93,11 +98,54 @@ def _run_pipeline(binary_a: str, binary_b: str, *,
         print(f"{_c(DIM, 'HTML written to')} {_c(CYAN, html_path)}")
 
     json_path = os.path.join(outdir, "report.json")
-    with open(json_path, "w") as f:
-        json.dump(diff_data, f, indent=2, default=str)
+    _write_json(json_path, diff_data)
     print(f"{_c(DIM, 'Data written to')} {_c(CYAN, json_path)}")
 
     return diff_data
+
+
+def cmd_extract(args):
+    """Extract features from a single binary."""
+    from .extract import run_extract
+
+    output = args.output
+    if output is None:
+        output = os.path.abspath(f"{Path(args.binary).stem}_features.json")
+    data = run_extract(args.binary, output, ghidra_path=args.ghidra, reuse_cached=not args.force)
+    print(f"Summary: {data['num_functions']} functions, arch={data.get('arch', 'unknown')}")
+
+
+def cmd_diff(args):
+    """Diff two extracted feature JSON files and emit diff.json."""
+    from .matcher import match_functions
+    from .analyzer import analyze_diff
+    from .console import _c, BOLD, DIM, GREEN, RED, CYAN
+
+    with open(args.features_a) as f:
+        feat_a = json.load(f)
+    with open(args.features_b) as f:
+        feat_b = json.load(f)
+
+    print(f"\nMatching {_c(BOLD, str(feat_a['num_functions']))} vs "
+          f"{_c(BOLD, str(feat_b['num_functions']))} functions...")
+    match_data = match_functions(feat_a, feat_b, threshold=args.threshold, stripped=args.stripped)
+    print(f"  {_c(GREEN, str(match_data['num_matches']))} matched, "
+          f"{_c(RED, str(match_data['num_unmatched_a']))} unmatched in A, "
+          f"{_c(RED, str(match_data['num_unmatched_b']))} unmatched in B")
+    print(f"{_c(DIM, 'Analyzing changes...')}")
+    diff_data = analyze_diff(feat_a, feat_b, match_data)
+
+    output = args.output or os.path.abspath("diff.json")
+    _write_json(output, diff_data)
+    print(f"{_c(DIM, 'Diff written to')} {_c(CYAN, output)}")
+    top = diff_data.get("functions", [])[: min(5, len(diff_data.get("functions", [])))]
+    if top:
+        print(_c(DIM, "Top changed functions:"))
+        for func in top:
+            print(
+                f"  {func['name_a']} -> {func['name_b']} "
+                f"(interest={func['interestingness']}, match={func['match_score']})"
+            )
 
 
 def cmd_run(args):
@@ -113,6 +161,7 @@ def cmd_run(args):
         threshold=args.threshold,
         ghidra=args.ghidra,
         stripped=args.stripped,
+        force_extract=args.force,
     )
 
 
@@ -156,8 +205,7 @@ def cmd_report(args):
         print(f"{_c(DIM, 'HTML written to')} {_c(CYAN, html_path)}")
 
     json_path = args.diff_json.replace(".json", "_triaged.json")
-    with open(json_path, "w") as f:
-        json.dump(diff_data, f, indent=2, default=str)
+    _write_json(json_path, diff_data)
     print(f"{_c(DIM, 'Data written to')} {_c(CYAN, json_path)}")
 
 
@@ -207,7 +255,29 @@ def main():
     p_run.add_argument("--ghidra", default=None, help="Path to Ghidra install directory")
     p_run.add_argument("--stripped", action="store_true",
                         help="Ignore function names during matching; use structural/contextual signals only")
+    p_run.add_argument("--force", action="store_true",
+                        help="Force re-extraction even if cached feature JSONs already match the input binaries")
     p_run.set_defaults(func=cmd_run)
+
+    # --- extract ---
+    p_extract = sub.add_parser("extract", help="Extract per-function features from a binary")
+    p_extract.add_argument("binary", help="Path to binary to analyze")
+    p_extract.add_argument("-o", "--output", default=None, help="Output feature JSON path")
+    p_extract.add_argument("--ghidra", default=None, help="Path to Ghidra install directory")
+    p_extract.add_argument("--force", action="store_true",
+                           help="Force extraction even if a matching cached feature file already exists")
+    p_extract.set_defaults(func=cmd_extract)
+
+    # --- diff ---
+    p_diff = sub.add_parser("diff", help="Diff two extracted feature JSON files")
+    p_diff.add_argument("features_a", help="Path to features JSON for version A")
+    p_diff.add_argument("features_b", help="Path to features JSON for version B")
+    p_diff.add_argument("-o", "--output", default=None, help="Output diff JSON path")
+    p_diff.add_argument("-t", "--threshold", type=float, default=0.3,
+                        help="Similarity threshold for matching (default: 0.3)")
+    p_diff.add_argument("--stripped", action="store_true",
+                        help="Ignore function names during matching; use structural/contextual signals only")
+    p_diff.set_defaults(func=cmd_diff)
 
     # --- report (from pre-computed diff.json) ---
     p_rep = sub.add_parser("report", help="Report from pre-computed diff.json")

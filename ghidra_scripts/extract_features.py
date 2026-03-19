@@ -67,19 +67,25 @@ for func in func_mgr.getFunctions(True):
         block_count += 1
 
     # --- referenced strings ---
+    # Walk only references that originate from instructions in this function.
+    # Scanning the global reference iterator from the function start address is
+    # prohibitively slow on larger binaries.
     strings = []
+    seen_strings = set()
     ref_mgr = currentProgram.getReferenceManager()
-    ref_iter = ref_mgr.getReferenceIterator(body.getMinAddress())
-    while ref_iter.hasNext():
-        ref = ref_iter.next()
-        if not body.contains(ref.getFromAddress()):
-            continue
-        to_addr = ref.getToAddress()
-        data = listing.getDataAt(to_addr)
-        if data is not None and data.hasStringValue():
-            s = data.getValue()
-            if s and len(s) >= 2:
-                strings.append(str(s))
+    instr_iter = listing.getInstructions(body, True)
+    while instr_iter.hasNext():
+        instr = instr_iter.next()
+        refs = ref_mgr.getReferencesFrom(instr.getAddress())
+        for ref in refs:
+            to_addr = ref.getToAddress()
+            data = listing.getDataAt(to_addr)
+            if data is not None and data.hasStringValue():
+                s = data.getValue()
+                s = str(s) if s is not None else ""
+                if len(s) >= 2 and s not in seen_strings:
+                    seen_strings.add(s)
+                    strings.append(s)
 
     # --- called functions (imports + internal) ---
     called_funcs = []
@@ -88,6 +94,7 @@ for func in func_mgr.getFunctions(True):
         called_funcs.append({
             "name": cf.getName(),
             "is_external": cf.isExternal() or cf.isThunk(),
+            "entry": None if (cf.isExternal() or cf.isThunk()) else cf.getEntryPoint().toString(),
         })
 
     # --- calling functions ---

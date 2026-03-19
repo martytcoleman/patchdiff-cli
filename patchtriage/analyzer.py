@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from .normalize import normalize_symbol
+
 
 def _set_diff(a: list | set, b: list | set) -> tuple[list, list]:
     """Return (added, removed) between two collections."""
@@ -14,8 +16,19 @@ def _call_names(func: dict, external_only: bool = False) -> set[str]:
     for c in func.get("called_functions", []):
         if external_only and not c.get("is_external"):
             continue
-        out.add(c["name"])
+        name = c["name"]
+        if not c.get("is_external") and _is_auto_name(name):
+            continue
+        out.add(name)
     return out
+
+
+def _is_auto_name(name: str) -> bool:
+    return (
+        name.startswith("FUN_")
+        or name.startswith("thunk_FUN_")
+        or name.startswith("LAB_")
+    )
 
 
 def _set_change(a: list | set, b: list | set) -> tuple[list, list]:
@@ -23,10 +36,48 @@ def _set_change(a: list | set, b: list | set) -> tuple[list, list]:
     return sorted(sb - sa), sorted(sa - sb)
 
 
-def analyze_match(func_a: dict, func_b: dict) -> dict:
+def _canonical_internal_calls(
+    func: dict,
+    side: str,
+    map_entry_a_to_b: dict[str, str],
+    map_entry_b_to_a: dict[str, str],
+    map_a_to_b: dict[str, str],
+    map_b_to_a: dict[str, str],
+) -> set[str]:
+    out = set()
+    for c in func.get("called_functions", []):
+        if c.get("is_external"):
+            continue
+        name = c["name"]
+        entry = c.get("entry")
+        if side == "a":
+            matched = (map_entry_a_to_b.get(entry) if entry else None) or map_a_to_b.get(name)
+            if matched:
+                out.add(f"matched:{matched}")
+            elif not _is_auto_name(name):
+                out.add(f"named:{normalize_symbol(name)}")
+        else:
+            if entry and entry in map_entry_b_to_a:
+                out.add(f"matched:{entry}")
+            elif name in map_b_to_a:
+                out.add(f"matched:{name}")
+            elif not _is_auto_name(name):
+                out.add(f"named:{normalize_symbol(name)}")
+    return out
+
+
+def analyze_match(func_a: dict, func_b: dict, *,
+                  map_entry_a_to_b: dict[str, str] | None = None,
+                  map_entry_b_to_a: dict[str, str] | None = None,
+                  map_a_to_b: dict[str, str] | None = None,
+                  map_b_to_a: dict[str, str] | None = None) -> dict:
     """Compute change signals between a matched pair of functions."""
 
     signals = {}
+    map_entry_a_to_b = map_entry_a_to_b or {}
+    map_entry_b_to_a = map_entry_b_to_a or {}
+    map_a_to_b = map_a_to_b or {}
+    map_b_to_a = map_b_to_a or {}
 
     # Size delta
     signals["size_a"] = func_a.get("size", 0)
@@ -59,9 +110,16 @@ def analyze_match(func_a: dict, func_b: dict) -> dict:
     signals["ext_calls_added"] = sorted(ext_b - ext_a)
     signals["ext_calls_removed"] = sorted(ext_a - ext_b)
 
-    # All call changes
-    calls_a = _call_names(func_a)
-    calls_b = _call_names(func_b)
+    # All call changes.
+    # For internal calls, collapse matched callees onto a shared canonical id so
+    # stripped binaries do not look wildly different just because auto-generated
+    # FUN_<addr> names shifted between builds.
+    calls_a = _call_names(func_a, external_only=True) | _canonical_internal_calls(
+        func_a, "a", map_entry_a_to_b, map_entry_b_to_a, map_a_to_b, map_b_to_a,
+    )
+    calls_b = _call_names(func_b, external_only=True) | _canonical_internal_calls(
+        func_b, "b", map_entry_a_to_b, map_entry_b_to_a, map_a_to_b, map_b_to_a,
+    )
     signals["calls_added"] = sorted(calls_b - calls_a)
     signals["calls_removed"] = sorted(calls_a - calls_b)
 
@@ -155,6 +213,10 @@ def analyze_diff(features_a: dict, features_b: dict, match_data: dict) -> dict:
     # Also build by name for fallback
     name_a = {f["name"]: f for f in features_a["functions"]}
     name_b = {f["name"]: f for f in features_b["functions"]}
+    map_a_to_b = {m["name_a"]: m["name_b"] for m in match_data["matches"]}
+    map_b_to_a = {m["name_b"]: m["name_a"] for m in match_data["matches"]}
+    map_entry_a_to_b = {m["entry_a"]: m["entry_b"] for m in match_data["matches"]}
+    map_entry_b_to_a = {m["entry_b"]: m["entry_a"] for m in match_data["matches"]}
 
     analyzed = []
     for m in match_data["matches"]:
@@ -163,7 +225,14 @@ def analyze_diff(features_a: dict, features_b: dict, match_data: dict) -> dict:
         if not fa or not fb:
             continue
 
-        signals = analyze_match(fa, fb)
+        signals = analyze_match(
+            fa,
+            fb,
+            map_entry_a_to_b=map_entry_a_to_b,
+            map_entry_b_to_a=map_entry_b_to_a,
+            map_a_to_b=map_a_to_b,
+            map_b_to_a=map_b_to_a,
+        )
         interest = compute_interestingness(signals)
 
         analyzed.append({

@@ -1,0 +1,74 @@
+2026-03-19 13:03:19 INFO  (LoggingInitialization) Using log config file: jar:file:/Users/marty/ghidra_12.0_PUBLIC/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml  
+2026-03-19 13:03:19 INFO  (LoggingInitialization) Using log file: /Users/marty/patchdiff-cli/tmp/yq-real-world/report/.ghidra-settings/ghidra/ghidra_12.0_PUBLIC/application.log  
+2026-03-19 13:03:19 INFO  (Preferences) Loading user preferences: /Users/marty/patchdiff-cli/tmp/yq-real-world/report/.ghidra-settings/ghidra/ghidra_12.0_PUBLIC/preferences  
+2026-03-19 13:03:19 INFO  (ClassSearcher) Searching for classes...  
+2026-03-19 13:03:21 INFO  (ClassSearcher) Class search complete (1388 ms)  
+2026-03-19 13:03:21 INFO  (SSLContextInitializer) Initializing SSL Context  
+2026-03-19 13:03:21 INFO  (SecureRandomFactory) Initializing Random Number Generator...  
+2026-03-19 13:03:21 INFO  (SecureRandomFactory) Random Number Generator initialization complete: NativePRNGNonBlocking  
+2026-03-19 13:03:21 INFO  (ApplicationTrustManagerFactory) Trust manager disabled, cacerts have not been set  
+2026-03-19 13:03:21 DEBUG (DefaultProjectManager) No tools found; Installing default tools  
+2026-03-19 13:03:21 DEBUG (DefaultProjectManager) 	no recent project directories found  
+2026-03-19 13:03:21 INFO  (DefaultProject) Creating project: /Users/marty/patchdiff-cli/tmp/yq-real-world/report/yq-v4.48_ghidra_dft_jj85/yq-v4.48_ghidra/yq-v4.48_ghidra  
+2026-03-19 13:03:23 INFO  (ProgramLoader) Using Loader: Mac OS X Mach-O  
+2026-03-19 13:03:23 INFO  (ProgramLoader) Using Language/Compiler: AARCH64:LE:64:AppleSilicon:golang  
+2026-03-19 13:03:23 INFO  (ProgramLoader) Using Library Search Path: [., /System/Library/dyld/dyld_shared_cache_arm64e, /System/Library/dyld/dyld_shared_cache_x86_64, /System/Library/dyld/dyld_shared_cache_x86_64h, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64h, /Users/marty/Library/Java/Extensions, /Library/Java/Extensions, /Network/Library/Java/Extensions, /System/Library/Java/Extensions, /usr/lib/java]  
+2026-03-19 13:03:26 INFO  (ProgramLoader) Additional info:
+Loading file:///Users/marty/patchdiff-cli/tmp/yq-real-world/yq-v4.48.2-darwin-arm64?MD5=8fa6d1d04e026bb54d78066133e4619f...
+------------------------------------------------
+
+Linking the External Programs of 'yq-v4.48.2-darwin-arm64' to imported libraries...
+  [/usr/lib/libSystem.B.dylib] -> not found in project
+  [/usr/lib/libresolv.9.dylib] -> not found in project
+  [/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation] -> not found in project
+  [/System/Library/Frameworks/Security.framework/Versions/A/Security] -> not found in project
+------------------------------------------------
+
+  
+2026-03-19 13:03:27 INFO  (LocalFileSystem) /yq-v4.48.2-darwin-arm64: file created (marty)  
+2026-03-19 13:03:27 INFO  (GoRttiMapper) Reading Go binary info: yq-v4.48.2-darwin-arm64  
+2026-03-19 13:03:27 WARN  (GoApiSnapshot) Falling back from 1.25.4 to 1.25.0 for Go API snapshot  
+2026-03-19 13:03:27 INFO  (GoRttiMapper) Using Go API snapshot for version 1.25.4  
+2026-03-19 13:03:28 INFO  (GoTypeManager) Discovered 92 unindexed Go types  
+2026-03-19 13:03:28 INFO  (GoTypeManager) Found 5192 Go types  
+2026-03-19 13:03:28 INFO  (GolangSymbolAnalyzer) Go version 1.25.4  
+2026-03-19 13:03:48 WARN  (GoTypeManager) Failed to get subtype 'net/http.Request' in *net/http.Request  
+2026-03-19 13:04:18 ERROR (AnalysisTaskWrapper) Analysis Task: Golang Symbols - Cannot invoke "ghidra.program.model.data.DataType.getLength()" because "dataType" is null java.lang.NullPointerException: Cannot invoke "ghidra.program.model.data.DataType.getLength()" because "dataType" is null
+	at ghidra.program.model.data.CompositeDataTypeImpl.validateDataType(CompositeDataTypeImpl.java:222)
+	at ghidra.program.model.data.StructureDataType.doAdd(StructureDataType.java:590)
+	at ghidra.program.model.data.StructureDataType.add(StructureDataType.java:566)
+	at ghidra.program.model.data.CompositeDataTypeImpl.add(CompositeDataTypeImpl.java:301)
+	at ghidra.app.util.bin.format.golang.GoFunctionMultiReturn.<init>(GoFunctionMultiReturn.java:103)
+	at ghidra.app.util.bin.format.golang.rtti.GoTypeManager.getFuncMultiReturn(GoTypeManager.java:999)
+	at ghidra.app.util.bin.format.golang.rtti.GoTypeManager.convertFuncDef(GoTypeManager.java:519)
+	at ghidra.app.util.bin.format.golang.rtti.GoTypeManager.convertApiTypeDef(GoTypeManager.java:477)
+	at ghidra.app.util.bin.format.golang.rtti.GoTypeManager.findTypeRec(GoTypeManager.java:450)
+	at ghidra.app.util.bin.format.golang.rtti.GoTypeManager.findDataType(GoTypeManager.java:356)
+	at ghidra.app.util.bin.format.golang.rtti.GoRttiMapper.createFuncDefFromApiSnapshot(GoRttiMapper.java:919)
+	at ghidra.app.util.bin.format.golang.rtti.GoRttiMapper.getFuncDefFor(GoRttiMapper.java:724)
+	at ghidra.app.plugin.core.analysis.GolangSymbolAnalyzer.markupGoFunctions(GolangSymbolAnalyzer.java:265)
+	at ghidra.app.plugin.core.analysis.GolangSymbolAnalyzer.added(GolangSymbolAnalyzer.java:149)
+	at ghidra.app.plugin.core.analysis.AnalysisScheduler.runAnalyzer(AnalysisScheduler.java:186)
+	at ghidra.app.plugin.core.analysis.AnalysisTask.applyTo(AnalysisTask.java:37)
+	at ghidra.app.plugin.core.analysis.AnalysisTask.applyTo(AnalysisTask.java:24)
+	at ghidra.app.plugin.core.analysis.AutoAnalysisManager$AnalysisTaskWrapper.run(AutoAnalysisManager.java:660)
+	at ghidra.app.plugin.core.analysis.AutoAnalysisManager.startAnalysis(AutoAnalysisManager.java:760)
+	at ghidra.app.plugin.core.analysis.AutoAnalysisManager.startAnalysis(AutoAnalysisManager.java:639)
+	at ghidra.program.flatapi.FlatProgramAPI.analyzeChanges(FlatProgramAPI.java:236)
+	at ghidra.program.flatapi.FlatProgramAPI.analyzeAll(FlatProgramAPI.java:213)
+ 
+2026-03-19 13:06:24 ERROR (ConstantPropagationAnalyzer) caught exception java.lang.InterruptedException
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1761)
+	at generic.concurrent.ProgressTracker.waitForNext(ProgressTracker.java:147)
+	at generic.concurrent.ConcurrentQ.waitUntilDone(ConcurrentQ.java:429)
+	at ghidra.app.services.AbstractAnalyzer.runParallelAddressAnalysis(AbstractAnalyzer.java:213)
+	at ghidra.app.plugin.core.analysis.ConstantPropagationAnalyzer.added(ConstantPropagationAnalyzer.java:192)
+	at ghidra.app.plugin.core.analysis.AnalysisScheduler.runAnalyzer(AnalysisScheduler.java:186)
+	at ghidra.app.plugin.core.analysis.AnalysisTask.applyTo(AnalysisTask.java:37)
+	at ghidra.app.plugin.core.analysis.AnalysisTask.applyTo(AnalysisTask.java:24)
+	at ghidra.app.plugin.core.analysis.AutoAnalysisManager$AnalysisTaskWrapper.run(AutoAnalysisManager.java:660)
+	at ghidra.app.plugin.core.analysis.AutoAnalysisManager.startAnalysis(AutoAnalysisManager.java:760)
+	at ghidra.app.plugin.core.analysis.AutoAnalysisManager.startAnalysis(AutoAnalysisManager.java:639)
+	at ghidra.program.flatapi.FlatProgramAPI.analyzeChanges(FlatProgramAPI.java:236)
+	at ghidra.program.flatapi.FlatProgramAPI.analyzeAll(FlatProgramAPI.java:213)
+ 

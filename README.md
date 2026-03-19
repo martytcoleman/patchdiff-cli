@@ -41,10 +41,21 @@ pip install -e .
 
 ## Usage
 
+### Fastest End-to-End Path
+
+```bash
+patchtriage run ./binaries/program_v1 ./binaries/program_v2 -o out --html
+```
+
+For stripped binaries:
+
+```bash
+patchtriage run ./binaries/program_v1 ./binaries/program_v2 -o out --stripped --html
+```
+
 ### Step 1: Extract Features
 
 ```bash
-# Extract features from each binary version
 patchtriage extract ./binaries/program_v1 -o features_v1.json
 patchtriage extract ./binaries/program_v2 -o features_v2.json
 ```
@@ -197,6 +208,38 @@ Suggested metrics:
 - function match precision / recall
 - top-k hit rate for known security-relevant functions
 - analyst triage reduction: how many functions need review versus total changed
+
+## Optional Real-World Case: jq 1.7 -> 1.7.1
+
+`jq` is a small C command-line JSON processor with official release binaries and a documented security-fix release. The official jq site states that `jq 1.7.1` was released on December 13, 2023 and includes fixes for `CVE-2023-50246` and `CVE-2023-50268`.
+
+If you want a real-world patch-triage run outside the default fast test suite:
+
+```bash
+scripts/run_jq_real_world.sh
+```
+
+This script:
+
+- downloads official `jq 1.7` and `jq 1.7.1` release binaries for the current OS/architecture
+- runs `patchtriage run --stripped` on the pair
+- writes reports under `tmp/jq-real-world/`
+
+Notes:
+
+- This is intentionally optional and not part of the default `pytest` suite.
+- It requires network access and a working Ghidra installation.
+- The download URL pattern is inferred from jq's official release layout on GitHub releases.
+
+## CLI Summary
+
+You do not need custom scripts to use PatchTriage:
+
+- `patchtriage run <bin_a> <bin_b>`: full extract + diff + triage + report
+- `patchtriage extract <bin>`: extract features once for reuse
+- `patchtriage diff <features_a> <features_b>`: match and analyze without rerunning Ghidra
+- `patchtriage report <diff.json>`: regenerate triage/report views from saved diff data
+- `patchtriage evaluate <corpus.json>`: run fixture-based evaluation
 
 ## JSON Schemas
 

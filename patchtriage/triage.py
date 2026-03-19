@@ -25,6 +25,16 @@ BOUNDS_CONSTANTS = {
 ERROR_KEYWORDS = {"error", "fail", "invalid", "overflow", "underflow", "denied",
                   "refused", "corrupt", "abort", "panic", "out of bounds",
                   "buffer", "null", "bad", "illegal", "exceed", "limit"}
+VALIDATION_STRING_CATEGORIES = {"error", "bounds", "path", "http"}
+
+TRIAGE_PRIORITY = {
+    "security_fix_likely": 0,
+    "security_fix_possible": 1,
+    "behavior_change": 2,
+    "unknown": 3,
+    "refactor": 4,
+    "unchanged": 5,
+}
 
 
 def _normalize_symbol(name: str) -> str:
@@ -114,6 +124,29 @@ def triage_function(func_diff: dict) -> dict:
         )
         sec_score += 1.0
 
+    if (
+        signals.get("compare_delta", 0) > 0
+        and signals.get("branch_delta", 0) > 0
+        and (
+            VALIDATION_STRING_CATEGORIES & string_categories_added
+            or "validation" in api_families_added
+            or error_strings
+        )
+    ):
+        rationale.append(
+            "Added checks and control-flow consistent with new input-validation or guard logic"
+        )
+        sec_score += 1.5
+
+    if (
+        signals.get("blocks_delta", 0) > 0
+        and signals.get("instr_delta", 0) > 0
+        and signals.get("compare_delta", 0) > 0
+        and abs(signals.get("size_delta_pct", 0)) >= 5
+    ):
+        rationale.append("Control-flow and comparison growth suggests new guard or parser logic")
+        sec_score += 0.75
+
     # --- Heuristic 5: new error-return paths (block growth + compare growth) ---
     if (signals.get("blocks_delta", 0) > 2
             and signals.get("compare_delta", 0) > 0
@@ -127,6 +160,18 @@ def triage_function(func_diff: dict) -> dict:
 
     # --- Heuristic 6: large refactoring (size change with no security signals) ---
     abs_pct = abs(signals.get("size_delta_pct", 0))
+    has_behavioral_signal = any([
+        signals.get("strings_added"),
+        signals.get("strings_removed"),
+        signals.get("ext_calls_added"),
+        signals.get("ext_calls_removed"),
+        signals.get("calls_added"),
+        signals.get("calls_removed"),
+        signals.get("blocks_delta", 0),
+        signals.get("instr_delta", 0),
+        signals.get("branch_delta", 0),
+        signals.get("compare_delta", 0),
+    ])
 
     # --- Determine label ---
     if sec_score >= 4.0:
@@ -137,9 +182,14 @@ def triage_function(func_diff: dict) -> dict:
         label = "behavior_change"
     elif func_diff.get("interestingness", 0) < 0.5:
         label = "unchanged"
-    elif abs_pct > 30 and not rationale:
+    elif abs_pct > 20 and not rationale:
         label = "refactor"
         rationale.append(f"Large size change ({signals.get('size_delta_pct', 0)}%) without clear security signals")
+    elif has_behavioral_signal and func_diff.get("interestingness", 0) >= 2.0:
+        label = "behavior_change"
+        rationale.append("Meaningful structural or call-flow change without direct security evidence")
+    elif func_diff.get("interestingness", 0) < 2.0:
+        label = "unchanged"
     else:
         label = "unknown"
 
@@ -170,5 +220,12 @@ def triage_diff(diff_data: dict) -> dict:
         lbl = func.get("triage_label", "unknown")
         labels[lbl] = labels.get(lbl, 0) + 1
     diff_data["triage_summary"] = labels
+
+    diff_data["functions"].sort(
+        key=lambda func: (
+            TRIAGE_PRIORITY.get(func.get("triage_label", "unknown"), 99),
+            -func.get("interestingness", 0),
+        )
+    )
 
     return diff_data

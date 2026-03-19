@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+import tempfile
 from collections import Counter
 from pathlib import Path
 
@@ -24,6 +25,28 @@ def _find_ghidra_install() -> str:
     return ""
 
 
+def _binary_metadata(binary_path: str) -> dict:
+    stat = os.stat(binary_path)
+    return {
+        "path": os.path.abspath(binary_path),
+        "size": stat.st_size,
+        "mtime": int(stat.st_mtime),
+    }
+
+
+def _load_cached_features(output_path: str, binary_path: str) -> dict | None:
+    if not os.path.isfile(output_path):
+        return None
+    try:
+        with open(output_path) as f:
+            data = json.load(f)
+    except Exception:
+        return None
+    if data.get("source_metadata") == _binary_metadata(binary_path):
+        return data
+    return None
+
+
 def _extract_features(program) -> dict:
     """Extract per-function features from a Ghidra FlatProgramAPI program."""
     from ghidra.program.model.block import BasicBlockModel
@@ -36,10 +59,17 @@ def _extract_features(program) -> dict:
     ref_mgr = program.getReferenceManager()
 
     functions_out = []
+    functions = list(func_mgr.getFunctions(True))
+    total_funcs = len(functions)
 
-    for func in func_mgr.getFunctions(True):
+    print(f"Extracting features from {total_funcs} discovered functions...", flush=True)
+
+    for idx, func in enumerate(functions, 1):
         if func.isThunk():
             continue
+
+        if idx == 1 or idx % 100 == 0 or idx == total_funcs:
+            print(f"  [{idx}/{total_funcs}] {func.getName()}", flush=True)
 
         name = func.getName()
         entry = func.getEntryPoint().toString()
@@ -81,18 +111,24 @@ def _extract_features(program) -> dict:
             block_count += 1
 
         # --- referenced strings ---
+        # Iterate instructions in the function body and inspect only references
+        # originating from those instructions. This avoids walking most of the
+        # program's global reference table once per function.
         strings = []
-        ref_iter = ref_mgr.getReferenceIterator(body.getMinAddress())
-        while ref_iter.hasNext():
-            ref = ref_iter.next()
-            if not body.contains(ref.getFromAddress()):
-                continue
-            to_addr = ref.getToAddress()
-            data = listing.getDataAt(to_addr)
-            if data is not None and data.hasStringValue():
-                s = data.getValue()
-                if s and len(str(s)) >= 2:
-                    strings.append(str(s))
+        seen_strings = set()
+        instr_iter = listing.getInstructions(body, True)
+        while instr_iter.hasNext():
+            instr = instr_iter.next()
+            refs = ref_mgr.getReferencesFrom(instr.getAddress())
+            for ref in refs:
+                to_addr = ref.getToAddress()
+                data = listing.getDataAt(to_addr)
+                if data is not None and data.hasStringValue():
+                    s = data.getValue()
+                    s = str(s) if s is not None else ""
+                    if len(s) >= 2 and s not in seen_strings:
+                        seen_strings.add(s)
+                        strings.append(s)
 
         # --- called functions ---
         called_funcs = []
@@ -101,6 +137,7 @@ def _extract_features(program) -> dict:
             called_funcs.append({
                 "name": cf.getName(),
                 "is_external": cf.isExternal() or cf.isThunk(),
+                "entry": None if (cf.isExternal() or cf.isThunk()) else cf.getEntryPoint().toString(),
             })
 
         # --- calling functions ---
@@ -132,7 +169,8 @@ def _extract_features(program) -> dict:
     })
 
 
-def run_extract(binary_path: str, output_path: str, ghidra_path: str | None = None) -> dict:
+def run_extract(binary_path: str, output_path: str, ghidra_path: str | None = None,
+                reuse_cached: bool = True) -> dict:
     """Run Ghidra via pyghidra to extract features from binary_path into output_path.
 
     Returns the parsed features dict.
@@ -143,6 +181,12 @@ def run_extract(binary_path: str, output_path: str, ghidra_path: str | None = No
     if not os.path.isfile(binary_path):
         print(f"Error: binary not found: {binary_path}", file=sys.stderr)
         sys.exit(1)
+
+    if reuse_cached:
+        cached = _load_cached_features(output_path, binary_path)
+        if cached is not None:
+            print(f"Reusing cached features from {output_path}")
+            return cached
 
     ghidra_install = ghidra_path or _find_ghidra_install()
     if not ghidra_install:
@@ -159,13 +203,42 @@ def run_extract(binary_path: str, output_path: str, ghidra_path: str | None = No
         sys.exit(1)
 
     print(f"Running Ghidra analysis on {binary_path} ...")
+    print("Waiting for Ghidra auto-analysis to finish, then extracting per-function features...", flush=True)
+
+    project_parent = os.path.dirname(output_path) or tempfile.gettempdir()
+    project_name = f"{Path(binary_path).stem}_ghidra"
+    settings_root = os.path.join(project_parent, ".ghidra-settings")
+    os.makedirs(settings_root, exist_ok=True)
+
+    existing_java_tool_opts = os.environ.get("JAVA_TOOL_OPTIONS", "")
+    settings_opt = f"-Dapplication.settingsdir={settings_root}"
+    if settings_opt not in existing_java_tool_opts:
+        os.environ["JAVA_TOOL_OPTIONS"] = f"{settings_opt} {existing_java_tool_opts}".strip()
 
     pyghidra.start(ghidra_install)
 
-    with pyghidra.open_program(binary_path) as flat_api:
-        program = flat_api.getCurrentProgram()
-        data = _extract_features(program)
+    with tempfile.TemporaryDirectory(prefix=f"{project_name}_", dir=project_parent) as tmp_project_root:
+        try:
+            with pyghidra.open_program(
+                binary_path,
+                project_location=tmp_project_root,
+                project_name=project_name,
+            ) as flat_api:
+                program = flat_api.getCurrentProgram()
+                data = _extract_features(program)
+        except KeyboardInterrupt:
+            print("\nPatchTriage extraction interrupted by user.", file=sys.stderr)
+            raise SystemExit(130)
+        except BaseException as exc:
+            # If the user interrupts while pyghidra is unwinding its context manager,
+            # JPype can surface JVMNotRunning during cleanup instead of the original
+            # KeyboardInterrupt. Treat that as a normal cancellation path.
+            if exc.__class__.__name__ == "JVMNotRunning":
+                print("\nPatchTriage extraction interrupted during Ghidra cleanup.", file=sys.stderr)
+                raise SystemExit(130)
+            raise
 
+    data["source_metadata"] = _binary_metadata(binary_path)
     with open(output_path, "w") as f:
         json.dump(data, f, indent=2, default=str)
 

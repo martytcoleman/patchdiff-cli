@@ -4,6 +4,38 @@ from __future__ import annotations
 from datetime import datetime
 
 
+def _shorten(text: str, limit: int = 100) -> str:
+    text = text.replace("\n", "\\n")
+    return text if len(text) <= limit else text[: limit - 3] + "..."
+
+
+def _preview_list(values: list[str], limit: int = 3, text_limit: int = 80) -> str:
+    preview = [_shorten(str(v), text_limit) for v in values[:limit]]
+    suffix = f" (+{len(values) - limit} more)" if len(values) > limit else ""
+    return ", ".join(repr(v) for v in preview) + suffix
+
+
+def _review_signals(signals: dict) -> list[str]:
+    notes = []
+    if signals.get("ext_calls_added") or signals.get("ext_calls_removed"):
+        notes.append(
+            f"external calls +{len(signals.get('ext_calls_added', []))}/-{len(signals.get('ext_calls_removed', []))}"
+        )
+    if signals.get("compare_delta", 0) > 0 or signals.get("branch_delta", 0) > 0:
+        notes.append(
+            f"checks cmp {signals.get('compare_delta', 0):+d}, branch {signals.get('branch_delta', 0):+d}"
+        )
+    if signals.get("string_categories_added"):
+        notes.append(f"string categories: {', '.join(signals['string_categories_added'][:3])}")
+    elif signals.get("strings_added"):
+        notes.append(f"strings added: {len(signals['strings_added'])}")
+    if signals.get("blocks_delta", 0) or signals.get("instr_delta", 0):
+        notes.append(
+            f"structure blocks {signals.get('blocks_delta', 0):+d}, instr {signals.get('instr_delta', 0):+d}"
+        )
+    return notes[:4]
+
+
 def _label_badge(label: str) -> str:
     badges = {
         "security_fix_likely": "**[SEC-LIKELY]**",
@@ -74,6 +106,19 @@ def generate_markdown(diff_data: dict, top_n: int = 30) -> str:
     # Top changed functions
     funcs = diff_data.get("functions", [])
     interesting = [f for f in funcs if f.get("interestingness", 0) > 0]
+    security_queue = [
+        f for f in interesting
+        if f.get("triage_label") in ("security_fix_likely", "security_fix_possible", "behavior_change")
+    ]
+
+    lines.append(f"## Security Review Queue")
+    lines.append("")
+    for i, func in enumerate(security_queue[: min(top_n, 10)], 1):
+        lines.append(
+            f"{i}. `{func['name_a']}` {_label_badge(func.get('triage_label', 'unknown'))} "
+            f"(score {func.get('interestingness', 0)})"
+        )
+    lines.append("")
 
     lines.append(f"## Top {min(top_n, len(interesting))} Changed Functions")
     lines.append("")
@@ -122,6 +167,13 @@ def generate_markdown(diff_data: dict, top_n: int = 30) -> str:
             for r in rationale:
                 lines.append(f"- {r}")
             lines.append("")
+        else:
+            notes = _review_signals(signals)
+            if notes:
+                lines.append("**Review Signals:**")
+                for note in notes:
+                    lines.append(f"- {note}")
+                lines.append("")
 
         # Detail changes
         if signals.get("ext_calls_added"):
@@ -129,9 +181,9 @@ def generate_markdown(diff_data: dict, top_n: int = 30) -> str:
         if signals.get("ext_calls_removed"):
             lines.append(f"  Ext calls removed: `{'`, `'.join(signals['ext_calls_removed'])}`")
         if signals.get("strings_added"):
-            lines.append(f"  Strings added: {signals['strings_added'][:10]}")
+            lines.append(f"  Strings added: {_preview_list(signals['strings_added'], limit=4, text_limit=90)}")
         if signals.get("strings_removed"):
-            lines.append(f"  Strings removed: {signals['strings_removed'][:10]}")
+            lines.append(f"  Strings removed: {_preview_list(signals['strings_removed'], limit=3, text_limit=90)}")
         if signals.get("api_families_added"):
             lines.append(f"  API families added: {signals['api_families_added']}")
         if signals.get("string_categories_added"):

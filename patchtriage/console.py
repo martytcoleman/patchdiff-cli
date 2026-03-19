@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import textwrap
 
 # ── ANSI color codes ──────────────────────────────────────────────────────────
 
@@ -115,7 +116,41 @@ def bar(value: float, max_val: float, width: int = 20) -> str:
         return ""
     filled = int(value / max_val * width)
     filled = min(filled, width)
-    return _c(YELLOW, "\u2588" * filled) + _c(GRAY, "\u2591" * (width - filled))
+    return _c(YELLOW, "#" * filled) + _c(GRAY, "-" * (width - filled))
+
+
+def _shorten(text: str, limit: int = 88) -> str:
+    text = text.replace("\n", "\\n")
+    return text if len(text) <= limit else text[: limit - 3] + "..."
+
+
+def _preview_strings(strings: list[str], color: str, prefix: str):
+    if not strings:
+        return
+    rendered = [_c(color, repr(_shorten(s))) for s in strings[:3]]
+    more = f" {_c(DIM, f'(+{len(strings)-3} more)')}" if len(strings) > 3 else ""
+    print(f"     {prefix} {', '.join(rendered)}{more}")
+
+
+def _review_signals(signals: dict) -> list[str]:
+    notes = []
+    if signals.get("ext_calls_added") or signals.get("ext_calls_removed"):
+        notes.append(
+            f"external calls +{len(signals.get('ext_calls_added', []))}/-{len(signals.get('ext_calls_removed', []))}"
+        )
+    if signals.get("compare_delta", 0) > 0 or signals.get("branch_delta", 0) > 0:
+        notes.append(
+            f"checks cmp {signals.get('compare_delta', 0):+d}, branch {signals.get('branch_delta', 0):+d}"
+        )
+    if signals.get("string_categories_added"):
+        notes.append(f"string categories: {', '.join(signals['string_categories_added'][:3])}")
+    elif signals.get("strings_added"):
+        notes.append(f"strings added: {len(signals['strings_added'])}")
+    if signals.get("blocks_delta", 0) or signals.get("instr_delta", 0):
+        notes.append(
+            f"structure blocks {signals.get('blocks_delta', 0):+d}, instr {signals.get('instr_delta', 0):+d}"
+        )
+    return notes[:4]
 
 
 # ── Main report printer ──────────────────────────────────────────────────────
@@ -191,7 +226,6 @@ def print_report(diff_data: dict, top_n: int = 30):
         if func.get("llm_summary") and not func["llm_summary"].startswith("LLM error"):
             summary = func["llm_summary"]
             # Word wrap at ~76 chars
-            import textwrap
             wrapped = textwrap.fill(summary, width=74, initial_indent="     ",
                                     subsequent_indent="     ")
             print(_c(ITALIC, wrapped))
@@ -210,7 +244,11 @@ def print_report(diff_data: dict, top_n: int = 30):
         rationale = func.get("triage_rationale", [])
         if rationale and rationale != ["No strong signals detected"]:
             for r in rationale:
-                print(f"     {_c(YELLOW, '-')} {r}")
+                wrapped = textwrap.fill(r, width=74, initial_indent="       ", subsequent_indent="       ")
+                print(f"     {_c(YELLOW, '-')}{wrapped[6:]}")
+        else:
+            for note in _review_signals(signals):
+                print(f"     {_c(YELLOW, '-')} {note}")
 
         # Call / string changes (compact)
         ext_added = signals.get("ext_calls_added", [])
@@ -222,12 +260,9 @@ def print_report(diff_data: dict, top_n: int = 30):
         str_added = signals.get("strings_added", [])
         str_removed = signals.get("strings_removed", [])
         if str_added:
-            strs = [_c(GREEN, repr(s)) for s in str_added[:5]]
-            more = f" {_c(DIM, f'(+{len(str_added)-5} more)')}" if len(str_added) > 5 else ""
-            print(f"     {_c(GREEN, '+ strings:')} {', '.join(strs)}{more}")
+            _preview_strings(str_added, GREEN, _c(GREEN, "+ strings:"))
         if str_removed:
-            strs = [_c(RED, repr(s)) for s in str_removed[:5]]
-            print(f"     {_c(RED, '- strings:')} {', '.join(strs)}")
+            _preview_strings(str_removed, RED, _c(RED, "- strings:"))
         api_added = signals.get("api_families_added", [])
         if api_added:
             print(f"     {_c(GREEN, '+ api families:')} {', '.join(_c(GREEN, c) for c in api_added)}")

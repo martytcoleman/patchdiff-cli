@@ -1,6 +1,7 @@
 """Function matching between two feature sets."""
 
 import math
+import sys
 from dataclasses import dataclass, field
 
 from scipy.optimize import linear_sum_assignment
@@ -191,9 +192,20 @@ def match_functions(features_a: dict, features_b: dict,
     remaining_a = [(i, f) for i, f in enumerate(funcs_a) if i not in used_a]
     remaining_b = [(j, f) for j, f in enumerate(funcs_b) if j not in used_b]
 
+    large_match = len(remaining_a) * len(remaining_b) >= 100000
+    if large_match:
+        mode = "stripped structural mode" if stripped else "hybrid name+similarity mode"
+        print(
+            f"Building candidate match matrix in {mode}: "
+            f"{len(remaining_a)} x {len(remaining_b)} remaining functions...",
+            flush=True,
+        )
+
     # Size-based blocking: only compare if sizes are within 3x
     scored_pairs: list[tuple[float, int, int]] = []
-    for i, fa in remaining_a:
+    for idx, (i, fa) in enumerate(remaining_a, 1):
+        if large_match and (idx == 1 or idx % 100 == 0 or idx == len(remaining_a)):
+            print(f"  candidate pass: {idx}/{len(remaining_a)} source functions", flush=True)
         sa = fa.get("size", 0)
         for j, fb in remaining_b:
             sb = fb.get("size", 0)
@@ -209,6 +221,9 @@ def match_functions(features_a: dict, features_b: dict,
             if score >= threshold:
                 scored_pairs.append((score, i, j))
 
+    if large_match:
+        print(f"Solving bipartite assignment over {len(scored_pairs)} candidate pairs...", flush=True)
+
     if scored_pairs:
         row_index = {i: idx for idx, (i, _) in enumerate(remaining_a)}
         col_index = {j: idx for idx, (j, _) in enumerate(remaining_b)}
@@ -217,6 +232,8 @@ def match_functions(features_a: dict, features_b: dict,
             score_matrix[row_index[i]][col_index[j]] = score
 
         rows, cols = linear_sum_assignment([[-score for score in row] for row in score_matrix])
+        if large_match:
+            print(f"Finalizing {len(rows)} proposed assignments...", flush=True)
         for row, col in zip(rows, cols):
             score = score_matrix[row][col]
             if score < threshold:

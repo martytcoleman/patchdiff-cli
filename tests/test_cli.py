@@ -41,3 +41,28 @@ def test_cli_report_command_writes_outputs(tmp_path):
     assert "PatchTriage Security Patch Triage Report" in text
     assert "_parse_http_request" in text
     assert "Running triage heuristics..." in result.stdout
+
+
+def test_cli_diff_command_writes_diff(tmp_path):
+    output = tmp_path / "diff.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "patchtriage.cli",
+            "diff",
+            "targets/open_source/features_v1.json",
+            "targets/open_source/features_v2.json",
+            "-o",
+            str(output),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    assert output.exists()
+    text = output.read_text()
+    assert '"total_matches"' in text
+    assert "Diff written to" in result.stdout
+    assert "Top changed functions:" in result.stdout

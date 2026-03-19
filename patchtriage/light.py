@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import struct
 import subprocess
 from collections import Counter
 
@@ -192,6 +193,129 @@ def _group_import_families(imports: list[str]) -> dict[str, list[str]]:
     return {family: sorted(set(names)) for family, names in grouped.items()}
 
 
+def _find_macho_section(binary_path: str, sect_name: str) -> tuple[int, int] | None:
+    """Return (file_offset, size) for a named Mach-O section, or None."""
+    out = _run_text(["otool", "-l", binary_path])
+    current_sect = None
+    offset = size = 0
+    for raw in out.splitlines():
+        line = raw.strip()
+        if line.startswith("sectname "):
+            current_sect = line.split(None, 1)[1]
+            offset = size = 0
+        elif current_sect == sect_name and line.startswith("size "):
+            try:
+                size = int(line.split()[1], 16)
+            except Exception:
+                size = 0
+        elif current_sect == sect_name and line.startswith("offset "):
+            try:
+                offset = int(line.split()[1])
+            except Exception:
+                offset = 0
+            if offset and size:
+                return (offset, size)
+            current_sect = None
+    return None
+
+
+# Go pclntab magic values (little-endian representation)
+_GO_PCLNTAB_MAGICS = {
+    0xFFFFFFF1: "1.20",   # Go 1.20+
+    0xFFFFFFF0: "1.18",   # Go 1.18-1.19
+    0xFFFFFFFA: "1.16",   # Go 1.16-1.17
+    0xFFFFFFFB: "1.2",    # Go 1.2-1.15
+}
+
+
+def _parse_go_pclntab(binary_path: str) -> list[dict] | None:
+    """Parse Go pclntab to extract function names and sizes.
+
+    Returns a list of {name, entry, size} dicts, or None if parsing fails.
+    Works with Go 1.16+ binaries (pclntab format versions 1.16, 1.18, 1.20).
+    """
+    loc = _find_macho_section(binary_path, "__gopclntab")
+    if loc is None:
+        return None
+    sect_offset, sect_size = loc
+    if sect_size < 72:
+        return None
+
+    try:
+        with open(binary_path, "rb") as f:
+            f.seek(sect_offset)
+            header = f.read(72)
+
+            magic = struct.unpack_from("<I", header, 0)[0]
+            version = _GO_PCLNTAB_MAGICS.get(magic)
+            if version is None:
+                return None
+
+            min_lc = header[6]
+            ptr_size = header[7]
+            if ptr_size not in (4, 8) or min_lc == 0:
+                return None
+
+            # Go 1.16+ header layout (all offsets relative to pclntab base):
+            # 8-15:  nfunc
+            # 16-23: nfiles
+            # 24-31: textStart (virtual address of __text)
+            # 32-39: funcnameOffset
+            # 40-47: cuOffset
+            # 48-55: filetabOffset
+            # 56-63: pctabOffset
+            # 64-71: pclnOffset (functab)
+            sz = "<q" if ptr_size == 8 else "<i"
+            nfunc = struct.unpack_from(sz, header, 8)[0]
+            funcname_off = struct.unpack_from(sz, header, 32)[0]
+            pcln_off = struct.unpack_from(sz, header, 64)[0]
+
+            if nfunc <= 0 or nfunc > 500_000:
+                return None
+
+            # Read functab: (nfunc+1) entries of (entryOff uint32, funcOff uint32)
+            f.seek(sect_offset + pcln_off)
+            ftab_data = f.read((nfunc + 1) * 8)
+            if len(ftab_data) < (nfunc + 1) * 8:
+                return None
+
+            # Pre-read funcname table for fast name lookups
+            f.seek(sect_offset + funcname_off)
+            # Read enough of the funcname table (names are typically < 200 bytes)
+            # Use a generous bound but cap at section size
+            fname_size = min(sect_size - funcname_off, 4 * 1024 * 1024)
+            fname_data = f.read(fname_size)
+
+            functions = []
+            for i in range(nfunc):
+                entry_off, func_off = struct.unpack_from("<II", ftab_data, i * 8)
+                next_entry_off = struct.unpack_from("<II", ftab_data, (i + 1) * 8)[0]
+                size = (next_entry_off - entry_off) * min_lc if i < nfunc - 1 else 0
+
+                # Read _func.nameOff (second field, int32, at offset 4 in the _func)
+                func_abs = pcln_off + func_off
+                if func_abs + 8 > sect_size:
+                    continue
+                f.seek(sect_offset + func_abs + 4)
+                name_off = struct.unpack_from("<i", f.read(4), 0)[0]
+
+                # Read null-terminated name from funcname table
+                if name_off < 0 or name_off >= len(fname_data):
+                    continue
+                end = fname_data.index(b"\x00", name_off) if b"\x00" in fname_data[name_off:] else name_off + 200
+                name = fname_data[name_off:end].decode("utf-8", errors="replace")
+
+                functions.append({
+                    "name": name,
+                    "entry": f"{entry_off:08x}",
+                    "size": size,
+                })
+
+            return functions if functions else None
+    except Exception:
+        return None
+
+
 def run_light_extract(binary_path: str, output_path: str, reuse_cached: bool = True) -> dict:
     """Extract coarse whole-binary features without Ghidra."""
     binary_path = os.path.abspath(binary_path)
@@ -212,21 +336,44 @@ def run_light_extract(binary_path: str, output_path: str, reuse_cached: bool = T
     import_families = _group_import_families(imports)
     arch = _detect_arch(binary_path)
 
+    # For Go binaries, parse pclntab to get real function names and sizes
+    go_funcs = None
+    if info["language"] == "go":
+        go_funcs = _parse_go_pclntab(binary_path)
+        if go_funcs:
+            print(f"  Parsed Go pclntab: {len(go_funcs)} functions", flush=True)
+
     functions = []
-    for sym in text_symbols[:200]:
-        functions.append({
-            "name": sym["name"],
-            "entry": sym["entry"],
-            "size": 1,
-            "instr_count": 0,
-            "block_count": 1,
-            "mnemonic_hist": {},
-            "mnemonic_bigrams": {},
-            "strings": [],
-            "constants": [],
-            "called_functions": [],
-            "callers": [],
-        })
+    if go_funcs:
+        for gf in go_funcs:
+            functions.append({
+                "name": gf["name"],
+                "entry": gf["entry"],
+                "size": gf["size"],
+                "instr_count": gf["size"] // 4 if gf["size"] else 0,
+                "block_count": 1,
+                "mnemonic_hist": {},
+                "mnemonic_bigrams": {},
+                "strings": [],
+                "constants": [],
+                "called_functions": [],
+                "callers": [],
+            })
+    else:
+        for sym in text_symbols[:200]:
+            functions.append({
+                "name": sym["name"],
+                "entry": sym["entry"],
+                "size": 1,
+                "instr_count": 0,
+                "block_count": 1,
+                "mnemonic_hist": {},
+                "mnemonic_bigrams": {},
+                "strings": [],
+                "constants": [],
+                "called_functions": [],
+                "callers": [],
+            })
 
     for section in sections[:64]:
         section_strings = [section["name"]]
@@ -294,8 +441,10 @@ def run_light_extract(binary_path: str, output_path: str, reuse_cached: bool = T
     with open(output_path, "w") as f:
         json.dump(data, f, indent=2, default=str)
 
+    go_count = len(go_funcs) if go_funcs else 0
     print(
         f"Light extraction summary: {len(text_symbols)} text symbols, "
+        f"{go_count} Go pclntab functions, "
         f"{len(sections)} sections, {len(imports)} imports, {len(strings)} strings"
     )
     print(f"Extracted {data['num_functions']} coarse feature nodes -> {output_path}")

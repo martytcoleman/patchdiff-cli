@@ -9,3 +9,9 @@ build/
 *.rep
 *_ghidra/
 .pytest_cache/
+
+# Local corpus extraction/build artifacts
+corpus/**/.ghidra-settings/
+corpus/openssh/openssh-*/
+corpus/openssl/openssl-*/
+corpus/zstd/zstd-*/

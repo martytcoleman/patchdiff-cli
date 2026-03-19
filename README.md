@@ -39,6 +39,33 @@ cd patchdiff-cli
 pip install -e .
 ```
 
+## Quick Corpus Setup
+
+To make grading and reproduction easy, this repo includes a one-command corpus setup script:
+
+```bash
+scripts/download_corpus_targets.sh
+```
+
+This populates `corpus/` with ready-to-run version pairs for:
+
+- `jq` (`1.7 -> 1.7.1`)
+- `yq` (`v4.48.2 -> v4.49.1`)
+- OpenSSL (`3.0.13 -> 3.0.14`, builds `openssl` binaries)
+- OpenSSH (`9.7p1 -> 9.8p1`, builds `sshd` binaries)
+
+Then run PatchTriage directly on those binaries, for example:
+
+```bash
+patchtriage run corpus/openssl/openssl-3.0.13-macos-arm64 corpus/openssl/openssl-3.0.14-macos-arm64 -o corpus/openssl/results --stripped --html
+patchtriage run corpus/openssh/sshd-9.7p1-macos-arm64 corpus/openssh/sshd-9.8p1-macos-arm64 -o corpus/openssh/results --stripped --html
+```
+
+Notes:
+
+- Building OpenSSL/OpenSSH can take several minutes.
+- OpenSSH is built with `--without-openssl` in this script to avoid host OpenSSL compatibility issues on some systems.
+
 ## Usage
 
 ### Common Use Cases

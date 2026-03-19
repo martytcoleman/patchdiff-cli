@@ -124,9 +124,12 @@ def analyze_match(func_a: dict, func_b: dict, *,
     signals["calls_added"] = sorted(calls_b - calls_a)
     signals["calls_removed"] = sorted(calls_a - calls_b)
 
-    # Constant changes
-    const_a = set(func_a.get("constants", []))
-    const_b = set(func_b.get("constants", []))
+    # Constant changes — filter out address-like values (pointers/code
+    # addresses that shift between builds and carry no semantic meaning).
+    # On 64-bit binaries these typically live above 0x100000000.
+    _ADDR_THRESHOLD = 0x100000000
+    const_a = {c for c in func_a.get("constants", []) if c < _ADDR_THRESHOLD}
+    const_b = {c for c in func_b.get("constants", []) if c < _ADDR_THRESHOLD}
     signals["constants_added"] = sorted(const_b - const_a)
     signals["constants_removed"] = sorted(const_a - const_b)
     signals["constant_buckets_added"], signals["constant_buckets_removed"] = _set_change(
@@ -208,7 +211,11 @@ def compute_interestingness(signals: dict) -> float:
 
 def _adjust_interestingness(raw_score: float, func_a: dict, func_b: dict, signals: dict) -> float:
     """Downweight low-evidence anonymous churn that often dominates stripped binaries."""
-    auto_named = _is_auto_name(func_a.get("name", "")) and _is_auto_name(func_b.get("name", ""))
+    # Detect phantom internal-call churn: when the only signal is
+    # calls_added/removed with zero structural or semantic change, it's
+    # almost always objdump misinterpreting data as code (precomputed
+    # tables, large constant arrays) where address shifts between builds
+    # create hundreds of fake "call target" diffs.
     only_internal_churn = (
         signals.get("calls_added") or signals.get("calls_removed")
     ) and not any([
@@ -223,6 +230,9 @@ def _adjust_interestingness(raw_score: float, func_a: dict, func_b: dict, signal
         abs(signals.get("blocks_delta", 0)) > 2,
         abs(signals.get("instr_delta", 0)) > 20,
     ])
+    if only_internal_churn and signals.get("size_delta", 0) == 0:
+        return round(min(raw_score, 0.5), 2)
+    auto_named = _is_auto_name(func_a.get("name", "")) and _is_auto_name(func_b.get("name", ""))
     if auto_named and only_internal_churn:
         return round(min(raw_score, 1.5), 2)
     roles_a = set(func_a.get("function_roles", []))
@@ -238,6 +248,15 @@ def _adjust_interestingness(raw_score: float, func_a: dict, func_b: dict, signal
     ])
     if format_only and not semantic_evidence:
         return round(min(raw_score, 1.2), 2)
+    # Codec/benchmark functions with only structural churn (no new
+    # strings, no new external calls, no new comparisons) are typically
+    # algorithmic optimizations that are noisy in patch-triage context.
+    # Cap their score so they don't dominate the top of the report.
+    codec_only = roles and roles <= {"codec", "benchmark"}
+    if codec_only and not semantic_evidence:
+        abs_size_pct = abs(signals.get("size_delta_pct", 0))
+        if abs_size_pct < 20:
+            return round(min(raw_score, 3.0), 2)
     return raw_score
 
 

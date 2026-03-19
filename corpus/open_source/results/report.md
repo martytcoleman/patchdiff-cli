@@ -1,6 +1,6 @@
 # PatchTriage Security Patch Triage Report
 
-**Generated:** 2026-03-19 15:09:38
+**Generated:** 2026-03-19 16:37:51
 **Binary A:** `/Users/marty/patchdiff-cli/corpus/open_source/server_v1`
 **Binary B:** `/Users/marty/patchdiff-cli/corpus/open_source/server_v2`
 **Primary question:** Which changed functions deserve immediate reverse-engineering attention?
@@ -24,19 +24,19 @@
 
 ## Security Review Queue
 
-1. `_parse_http_request` **[SEC-LIKELY]** (score 65.8)
-2. `_parse_content_length` **[SEC-LIKELY]** (score 41.6)
-3. `_parse_request_line` **[SEC-LIKELY]** (score 35.7)
-4. `_url_decode` **[SEC-LIKELY]** (score 27.6)
-5. `_parse_header_line` **[SEC-POSSIBLE]** (score 18.8)
-6. `_print_request` **[SEC-POSSIBLE]** (score 8.9)
-7. `_format_log_entry` **[SEC-POSSIBLE]** (score 6.8)
+1. `_parse_http_request` **[SEC-LIKELY]** (score 55.9)
+2. `_parse_content_length` **[SEC-LIKELY]** (score 38.6)
+3. `_parse_request_line` **[SEC-LIKELY]** (score 31.8)
+4. `_url_decode` **[SEC-LIKELY]** (score 23.1)
+5. `_parse_header_line` **[SEC-POSSIBLE]** (score 16.7)
+6. `_format_log_entry` **[SEC-POSSIBLE]** (score 6.5)
+7. `_print_request` **[SEC-POSSIBLE]** (score 6.5)
 
-## Top 10 Changed Functions
+## Top 9 Changed Functions
 
 ### 1. `_parse_http_request` **[SEC-LIKELY]**
 
-- **Interestingness:** 65.8
+- **Interestingness:** 55.9
 - **Match score:** 0.8796 (name_exact)
 - **Triage confidence:** 0.66
 - **Inferred roles:** allocator, control_heavy, formatter, io, memory_heavy, parser
@@ -57,7 +57,7 @@
 
 ### 2. `_parse_content_length` **[SEC-LIKELY]**
 
-- **Interestingness:** 41.6
+- **Interestingness:** 38.6
 - **Match score:** 0.3847 (name_exact)
 - **Triage confidence:** 0.84
 - **Inferred roles:** control_heavy, formatter, io, parser
@@ -78,7 +78,7 @@
 
 ### 3. `_parse_request_line` **[SEC-LIKELY]**
 
-- **Interestingness:** 35.7
+- **Interestingness:** 31.8
 - **Match score:** 0.7802 (name_exact)
 - **Triage confidence:** 0.66
 - **Inferred roles:** control_heavy, formatter, io, parser
@@ -99,7 +99,7 @@
 
 ### 4. `_url_decode` **[SEC-LIKELY]**
 
-- **Interestingness:** 27.6
+- **Interestingness:** 23.1
 - **Match score:** 0.8089 (name_exact)
 - **Triage confidence:** 0.59
 - **Inferred roles:** codec, control_heavy, io, parser
@@ -119,7 +119,7 @@
 
 ### 5. `_parse_header_line` **[SEC-POSSIBLE]**
 
-- **Interestingness:** 18.8
+- **Interestingness:** 16.7
 - **Match score:** 0.8657 (name_exact)
 - **Triage confidence:** 0.47
 - **Inferred roles:** control_heavy, parser
@@ -136,27 +136,9 @@
 
 ---
 
-### 6. `_print_request` **[SEC-POSSIBLE]**
+### 6. `_format_log_entry` **[SEC-POSSIBLE]**
 
-- **Interestingness:** 8.9
-- **Match score:** 0.953 (name_exact)
-- **Triage confidence:** 0.38
-- **Inferred roles:** formatter
-- **Size:** 252 -> 248 (-1.6%)
-- **Blocks:** 14 -> 14 (+0)
-- **Instructions:** 63 -> 62 (-1)
-
-**Heuristic Rationale:**
-- Replaced unsafe `___sprintf_chk` with `_snprintf`
-
-  Ext calls added: `_snprintf`
-  Ext calls removed: `___sprintf_chk`
-
----
-
-### 7. `_format_log_entry` **[SEC-POSSIBLE]**
-
-- **Interestingness:** 6.8
+- **Interestingness:** 6.5
 - **Match score:** 0.87 (name_exact)
 - **Triage confidence:** 0.38
 - **Inferred roles:** formatter, logger
@@ -172,9 +154,27 @@
 
 ---
 
+### 7. `_print_request` **[SEC-POSSIBLE]**
+
+- **Interestingness:** 6.5
+- **Match score:** 0.953 (name_exact)
+- **Triage confidence:** 0.38
+- **Inferred roles:** formatter
+- **Size:** 252 -> 248 (-1.6%)
+- **Blocks:** 14 -> 14 (+0)
+- **Instructions:** 63 -> 62 (-1)
+
+**Heuristic Rationale:**
+- Replaced unsafe `___sprintf_chk` with `_snprintf`
+
+  Ext calls added: `_snprintf`
+  Ext calls removed: `___sprintf_chk`
+
+---
+
 ### 8. `_main` [REFACTOR]
 
-- **Interestingness:** 13.2
+- **Interestingness:** 10.8
 - **Match score:** 0.8904 (name_exact)
 - **Triage confidence:** 0.0
 - **Inferred roles:** allocator, dispatcher, formatter, memory_heavy
@@ -203,19 +203,6 @@
 - Large size change (-80.0%) without clear security signals
 
   Ext calls removed: `_printf`
-
----
-
-### 10. `_free_request` [UNCHANGED]
-
-- **Interestingness:** 0.6
-- **Match score:** 1.05 (name_exact)
-- **Triage confidence:** 0.0
-- **Inferred roles:** allocator, memory_heavy
-- **Size:** 44 -> 44 (+0.0%)
-- **Blocks:** 3 -> 3 (+0)
-- **Instructions:** 11 -> 11 (+0)
-
 
 ---
 

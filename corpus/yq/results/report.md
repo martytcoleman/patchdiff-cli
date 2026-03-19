@@ -1,6 +1,6 @@
 # PatchTriage Security Patch Triage Report
 
-**Generated:** 2026-03-19 15:09:41
+**Generated:** 2026-03-19 16:38:11
 **Binary A:** `/Users/marty/patchdiff-cli/corpus/yq/yq-v4.48.2-darwin-arm64`
 **Binary B:** `/Users/marty/patchdiff-cli/corpus/yq/yq-v4.49.1-darwin-arm64`
 **Primary question:** Which changed functions deserve immediate reverse-engineering attention?
@@ -9,16 +9,17 @@
 
 | Metric | Value |
 |--------|-------|
-| Matched functions | 23 |
-| Unmatched in A | 0 |
-| Unmatched in B | 0 |
+| Matched functions | 11154 |
+| Unmatched in A | 1 |
+| Unmatched in B | 2 |
 
 ### Triage Breakdown
 
 | Label | Count |
 |-------|-------|
 | [BEHAVIOR] | 1 |
-| [UNCHANGED] | 22 |
+| [REFACTOR] | 1 |
+| [UNCHANGED] | 11152 |
 
 ## Security Review Queue
 
@@ -26,9 +27,9 @@
 
 ## Collapsed Families
 
-- `section:__TEXT:__rodata` represents 3 similar `unchanged` changes
+- `github.com/mikefarah/yq/v4/pkg/yqlib.(*tomlDecoder).processTable` represents 10 similar `unchanged` changes
 
-## Top 2 Changed Functions
+## Top 3 Changed Functions
 
 ### 1. `__binary__` [BEHAVIOR]
 
@@ -48,20 +49,45 @@
 
 ---
 
-### 2. `section:__TEXT:__rodata` [UNCHANGED]
-
-**Collapsed similar changes:** 2
-**Examples:** `section:__TEXT:__text`, `section:__DATA_CONST:__gopclntab`
+### 2. `github.com/mikefarah/yq/v4/pkg/yqlib.init.stringValue.func60` [REFACTOR]
 
 - **Interestingness:** 1.6
-- **Match score:** 1.05 (name_exact)
+- **Match score:** 0.9646 (name_exact)
 - **Triage confidence:** 0.0
-- **Size:** 928857 -> 929369 (+0.1%)
+- **Size:** 2688 -> 2112 (-21.4%)
 - **Blocks:** 1 -> 1 (+0)
-- **Instructions:** 12000 -> 12000 (+0)
+- **Instructions:** 672 -> 528 (-144)
 
 **Heuristic Rationale:**
-- Primarily structural churn without semantic evidence
+- Large structural change without semantic evidence
 
 
 ---
+
+### 3. `github.com/mikefarah/yq/v4/pkg/yqlib.(*tomlDecoder).processTable` [UNCHANGED]
+
+**Collapsed similar changes:** 9
+**Examples:** `github.com/mikefarah/yq/v4/pkg/yqlib.(*tomlDecoder).processArrayTable`, `github.com/mikefarah/yq/v4/pkg/yqlib.envOperator`, `github.com/mikefarah/yq/v4/pkg/yqlib.envsubstOperator`, `github.com/mikefarah/yq/v4/pkg/yqlib.loadStringOperator`, `github.com/mikefarah/yq/v4/pkg/yqlib.loadOperator`
+
+- **Interestingness:** 1.6
+- **Match score:** 0.9688 (name_exact)
+- **Triage confidence:** 0.0
+- **Inferred roles:** codec, dispatcher, parser
+- **Size:** 3776 -> 3968 (+5.1%)
+- **Blocks:** 1 -> 1 (+0)
+- **Instructions:** 944 -> 992 (+48)
+
+**Review Signals:**
+- structure blocks +0, instr +48
+
+
+---
+
+## Unmatched Functions
+
+### New in B (2)
+- `github.com/mikefarah/yq/v4/pkg/yqlib.getPathToUse`
+- `github.com/mikefarah/yq/v4/pkg/yqlib.processEscapeCharacters`
+
+### Removed from A (1)
+- `strings.ReplaceAll`

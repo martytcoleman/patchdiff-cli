@@ -26,3 +26,217 @@ Linking the External Programs of 'jq-1.7-macos-arm64' to imported libraries...
   
 2026-03-19 15:09:47 INFO  (LocalFileSystem) /jq-1.7-macos-arm64: file created (marty)  
 2026-03-19 15:09:51 INFO  (DecompilerSwitchAnalyzer) hit non-returning function, restarting decompiler switch analyzer later  
+2026-03-19 15:10:34 DEBUG (FidAnalyzer) No FID Libraries apply for language AARCH64:LE:64:AppleSilicon  
+2026-03-19 15:10:34 INFO  (PackedDatabaseCache) Packed database cache: /var/tmp/marty-ghidra/packed-db-cache  
+2026-03-19 15:10:34 DEBUG (PackedDatabaseCache) Using cached packed database: /Users/marty/ghidra_12.0_PUBLIC/Ghidra/Features/Base/data/typeinfo/mac_10.9/mac_osx.gdt  
+2026-03-19 15:10:37 INFO  (ApplyDataArchiveAnalyzer) Applied data type archive: mac_osx  
+2026-03-19 15:10:48 INFO  (AutoAnalysisManager) -----------------------------------------------------
+    AARCH64 ELF PLT Thunks                     0.000 secs
+    ASCII Strings                              1.152 secs
+    Apply Data Archives                        2.537 secs
+    Basic Constant Reference Analyzer          8.472 secs
+    Call Convention ID                         0.128 secs
+    Call-Fixup Installer                       0.035 secs
+    Create Address Tables                      0.737 secs
+    Create Address Tables - One Time           0.414 secs
+    Create Function                            0.647 secs
+    Data Reference                             2.199 secs
+    Decompiler Switch Analysis                20.158 secs
+    Decompiler Switch Analysis - One Time      9.885 secs
+    Demangler GNU                              0.065 secs
+    Disassemble                                0.192 secs
+    Disassemble Entry Points                   2.822 secs
+    Embedded Media                             0.028 secs
+    External Entry References                  0.000 secs
+    Function ID                                0.098 secs
+    Function Start Search                      0.181 secs
+    Function Start Search After Code           0.160 secs
+    Function Start Search After Data           0.181 secs
+    Function Start Search delayed - One Time   0.003 secs
+    Mach-O Function Starts                     1.109 secs
+    Non-Returning Functions - Discovered       0.352 secs
+    Non-Returning Functions - Known            0.011 secs
+    Reference                                  0.321 secs
+    Shared Return Calls                        0.510 secs
+    Stack                                      6.364 secs
+    Subroutine References                      1.952 secs
+    Subroutine References - One Time           0.001 secs
+-----------------------------------------------------
+     Total Time   60 secs
+-----------------------------------------------------
+  
+2026-03-19 15:11:02 INFO  (DefaultProject) Creating project: /Users/marty/patchdiff-cli/corpus/jq/results/jq-1.7_ghidra_k_duubgy/jq-1.7_ghidra/jq-1.7_ghidra  
+2026-03-19 15:11:02 INFO  (ProgramLoader) Using Loader: Mac OS X Mach-O  
+2026-03-19 15:11:02 INFO  (ProgramLoader) Using Language/Compiler: AARCH64:LE:64:AppleSilicon:default  
+2026-03-19 15:11:02 INFO  (ProgramLoader) Using Library Search Path: [., /System/Library/dyld/dyld_shared_cache_arm64e, /System/Library/dyld/dyld_shared_cache_x86_64, /System/Library/dyld/dyld_shared_cache_x86_64h, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64h, /Users/marty/Library/Java/Extensions, /Library/Java/Extensions, /Network/Library/Java/Extensions, /System/Library/Java/Extensions, /usr/lib/java]  
+2026-03-19 15:11:02 INFO  (ProgramLoader) Additional info:
+Loading file:///Users/marty/patchdiff-cli/corpus/jq/jq-1.7.1-macos-arm64?MD5=4ee0157ad6740efc58162a8266ca3091...
+Discovered 1319 DYLD_CHAINED_PTR_64_OFFSET chained pointers.
+Fixed up 1319 chained pointers.
+------------------------------------------------
+
+Linking the External Programs of 'jq-1.7.1-macos-arm64' to imported libraries...
+  [/usr/lib/libSystem.B.dylib] -> not found in project
+------------------------------------------------
+
+  
+2026-03-19 15:11:03 INFO  (LocalFileSystem) /jq-1.7.1-macos-arm64: file created (marty)  
+2026-03-19 15:11:05 INFO  (DecompilerSwitchAnalyzer) hit non-returning function, restarting decompiler switch analyzer later  
+2026-03-19 15:11:42 DEBUG (FidAnalyzer) No FID Libraries apply for language AARCH64:LE:64:AppleSilicon  
+2026-03-19 15:11:42 DEBUG (PackedDatabaseCache) Using cached packed database: /Users/marty/ghidra_12.0_PUBLIC/Ghidra/Features/Base/data/typeinfo/mac_10.9/mac_osx.gdt  
+2026-03-19 15:11:42 INFO  (ApplyDataArchiveAnalyzer) Applied data type archive: mac_osx  
+2026-03-19 15:11:49 INFO  (AutoAnalysisManager) -----------------------------------------------------
+    AARCH64 ELF PLT Thunks                     0.000 secs
+    ASCII Strings                              0.129 secs
+    Apply Data Archives                        0.451 secs
+    Basic Constant Reference Analyzer          5.341 secs
+    Call Convention ID                         0.013 secs
+    Call-Fixup Installer                       0.026 secs
+    Create Address Tables                      0.159 secs
+    Create Address Tables - One Time           0.112 secs
+    Create Function                            0.432 secs
+    Data Reference                             1.948 secs
+    Decompiler Switch Analysis                18.895 secs
+    Decompiler Switch Analysis - One Time      8.901 secs
+    Demangler GNU                              0.017 secs
+    Disassemble                                0.222 secs
+    Disassemble Entry Points                   1.402 secs
+    Embedded Media                             0.015 secs
+    External Entry References                  0.000 secs
+    Function ID                                0.002 secs
+    Function Start Search                      0.097 secs
+    Function Start Search After Code           0.049 secs
+    Function Start Search After Data           0.045 secs
+    Function Start Search delayed - One Time   0.003 secs
+    Mach-O Function Starts                     0.254 secs
+    Non-Returning Functions - Discovered       0.195 secs
+    Non-Returning Functions - Known            0.004 secs
+    Reference                                  0.151 secs
+    Shared Return Calls                        0.233 secs
+    Stack                                      5.100 secs
+    Subroutine References                      1.285 secs
+    Subroutine References - One Time           0.000 secs
+-----------------------------------------------------
+     Total Time   45 secs
+-----------------------------------------------------
+  
+2026-03-19 15:23:15 INFO  (LoggingInitialization) Using log config file: jar:file:/Users/marty/ghidra_12.0_PUBLIC/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml  
+2026-03-19 15:23:15 INFO  (LoggingInitialization) Using log file: /Users/marty/patchdiff-cli/corpus/jq/results/.ghidra-settings/ghidra/ghidra_12.0_PUBLIC/application.log  
+2026-03-19 15:23:15 INFO  (Preferences) Loading user preferences: /Users/marty/patchdiff-cli/corpus/jq/results/.ghidra-settings/ghidra/ghidra_12.0_PUBLIC/preferences  
+2026-03-19 15:23:15 INFO  (ClassSearcher) Searching for classes...  
+2026-03-19 15:23:17 INFO  (ClassSearcher) Class search complete (1911 ms)  
+2026-03-19 15:23:17 INFO  (SSLContextInitializer) Initializing SSL Context  
+2026-03-19 15:23:17 INFO  (SecureRandomFactory) Initializing Random Number Generator...  
+2026-03-19 15:23:17 INFO  (SecureRandomFactory) Random Number Generator initialization complete: NativePRNGNonBlocking  
+2026-03-19 15:23:17 INFO  (ApplicationTrustManagerFactory) Trust manager disabled, cacerts have not been set  
+2026-03-19 15:23:17 INFO  (DefaultProject) Creating project: /Users/marty/patchdiff-cli/corpus/jq/results/jq-1_ghidra_xbjv4wmv/jq-1_ghidra/jq-1_ghidra  
+2026-03-19 15:23:19 INFO  (ProgramLoader) Using Loader: Mac OS X Mach-O  
+2026-03-19 15:23:19 INFO  (ProgramLoader) Using Language/Compiler: AARCH64:LE:64:AppleSilicon:default  
+2026-03-19 15:23:19 INFO  (ProgramLoader) Using Library Search Path: [., /System/Library/dyld/dyld_shared_cache_arm64e, /System/Library/dyld/dyld_shared_cache_x86_64, /System/Library/dyld/dyld_shared_cache_x86_64h, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64h, /Users/marty/Library/Java/Extensions, /Library/Java/Extensions, /Network/Library/Java/Extensions, /System/Library/Java/Extensions, /usr/lib/java]  
+2026-03-19 15:23:20 INFO  (ProgramLoader) Additional info:
+Loading file:///Users/marty/patchdiff-cli/corpus/jq/jq-1.7-macos-arm64?MD5=7a8548abfc6b0ff3d0cee73d9efe19ab...
+Discovered 1319 DYLD_CHAINED_PTR_64_OFFSET chained pointers.
+Fixed up 1319 chained pointers.
+------------------------------------------------
+
+Linking the External Programs of 'jq-1.7-macos-arm64' to imported libraries...
+  [/usr/lib/libSystem.B.dylib] -> not found in project
+------------------------------------------------
+
+  
+2026-03-19 15:23:21 INFO  (LocalFileSystem) /jq-1.7-macos-arm64: file created (marty)  
+2026-03-19 15:23:24 INFO  (DecompilerSwitchAnalyzer) hit non-returning function, restarting decompiler switch analyzer later  
+2026-03-19 15:23:50 DEBUG (FidAnalyzer) No FID Libraries apply for language AARCH64:LE:64:AppleSilicon  
+2026-03-19 15:23:50 INFO  (PackedDatabaseCache) Packed database cache: /var/tmp/marty-ghidra/packed-db-cache  
+2026-03-19 15:23:51 DEBUG (PackedDatabaseCache) Using cached packed database: /Users/marty/ghidra_12.0_PUBLIC/Ghidra/Features/Base/data/typeinfo/mac_10.9/mac_osx.gdt  
+2026-03-19 15:23:51 INFO  (ApplyDataArchiveAnalyzer) Applied data type archive: mac_osx  
+2026-03-19 15:23:57 INFO  (AutoAnalysisManager) -----------------------------------------------------
+    AARCH64 ELF PLT Thunks                     0.000 secs
+    ASCII Strings                              0.705 secs
+    Apply Data Archives                        0.688 secs
+    Basic Constant Reference Analyzer          4.769 secs
+    Call Convention ID                         0.013 secs
+    Call-Fixup Installer                       0.030 secs
+    Create Address Tables                      0.156 secs
+    Create Address Tables - One Time           0.087 secs
+    Create Function                            0.477 secs
+    Data Reference                             0.960 secs
+    Decompiler Switch Analysis                14.258 secs
+    Decompiler Switch Analysis - One Time      4.695 secs
+    Demangler GNU                              0.027 secs
+    Disassemble                                0.220 secs
+    Disassemble Entry Points                   1.930 secs
+    Embedded Media                             0.030 secs
+    External Entry References                  0.000 secs
+    Function ID                                0.068 secs
+    Function Start Search                      0.164 secs
+    Function Start Search After Code           0.057 secs
+    Function Start Search After Data           0.051 secs
+    Function Start Search delayed - One Time   0.003 secs
+    Mach-O Function Starts                     0.384 secs
+    Non-Returning Functions - Discovered       0.323 secs
+    Non-Returning Functions - Known            0.010 secs
+    Reference                                  0.209 secs
+    Shared Return Calls                        0.374 secs
+    Stack                                      4.395 secs
+    Subroutine References                      0.873 secs
+    Subroutine References - One Time           0.000 secs
+-----------------------------------------------------
+     Total Time   35 secs
+-----------------------------------------------------
+  
+2026-03-19 15:24:04 INFO  (DefaultProject) Creating project: /Users/marty/patchdiff-cli/corpus/jq/results/jq-1.7_ghidra_zaovi6ju/jq-1.7_ghidra/jq-1.7_ghidra  
+2026-03-19 15:24:04 INFO  (ProgramLoader) Using Loader: Mac OS X Mach-O  
+2026-03-19 15:24:04 INFO  (ProgramLoader) Using Language/Compiler: AARCH64:LE:64:AppleSilicon:default  
+2026-03-19 15:24:04 INFO  (ProgramLoader) Using Library Search Path: [., /System/Library/dyld/dyld_shared_cache_arm64e, /System/Library/dyld/dyld_shared_cache_x86_64, /System/Library/dyld/dyld_shared_cache_x86_64h, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64h, /Users/marty/Library/Java/Extensions, /Library/Java/Extensions, /Network/Library/Java/Extensions, /System/Library/Java/Extensions, /usr/lib/java]  
+2026-03-19 15:24:04 INFO  (ProgramLoader) Additional info:
+Loading file:///Users/marty/patchdiff-cli/corpus/jq/jq-1.7.1-macos-arm64?MD5=4ee0157ad6740efc58162a8266ca3091...
+Discovered 1319 DYLD_CHAINED_PTR_64_OFFSET chained pointers.
+Fixed up 1319 chained pointers.
+------------------------------------------------
+
+Linking the External Programs of 'jq-1.7.1-macos-arm64' to imported libraries...
+  [/usr/lib/libSystem.B.dylib] -> not found in project
+------------------------------------------------
+
+  
+2026-03-19 15:24:04 INFO  (LocalFileSystem) /jq-1.7.1-macos-arm64: file created (marty)  
+2026-03-19 15:24:06 INFO  (DecompilerSwitchAnalyzer) hit non-returning function, restarting decompiler switch analyzer later  
+2026-03-19 15:24:32 DEBUG (FidAnalyzer) No FID Libraries apply for language AARCH64:LE:64:AppleSilicon  
+2026-03-19 15:24:32 DEBUG (PackedDatabaseCache) Using cached packed database: /Users/marty/ghidra_12.0_PUBLIC/Ghidra/Features/Base/data/typeinfo/mac_10.9/mac_osx.gdt  
+2026-03-19 15:24:33 INFO  (ApplyDataArchiveAnalyzer) Applied data type archive: mac_osx  
+2026-03-19 15:24:37 INFO  (AutoAnalysisManager) -----------------------------------------------------
+    AARCH64 ELF PLT Thunks                     0.000 secs
+    ASCII Strings                              0.106 secs
+    Apply Data Archives                        0.416 secs
+    Basic Constant Reference Analyzer          3.113 secs
+    Call Convention ID                         0.009 secs
+    Call-Fixup Installer                       0.026 secs
+    Create Address Tables                      0.120 secs
+    Create Address Tables - One Time           0.073 secs
+    Create Function                            0.262 secs
+    Data Reference                             0.657 secs
+    Decompiler Switch Analysis                15.777 secs
+    Decompiler Switch Analysis - One Time      5.566 secs
+    Demangler GNU                              0.011 secs
+    Disassemble                                0.235 secs
+    Disassemble Entry Points                   0.686 secs
+    Embedded Media                             0.012 secs
+    External Entry References                  0.001 secs
+    Function ID                                0.002 secs
+    Function Start Search                      0.076 secs
+    Function Start Search After Code           0.038 secs
+    Function Start Search After Data           0.036 secs
+    Function Start Search delayed - One Time   0.003 secs
+    Mach-O Function Starts                     0.235 secs
+    Non-Returning Functions - Discovered       0.141 secs
+    Non-Returning Functions - Known            0.002 secs
+    Reference                                  0.144 secs
+    Shared Return Calls                        0.184 secs
+    Stack                                      3.739 secs
+    Subroutine References                      0.715 secs
+    Subroutine References - One Time           0.002 secs
+-----------------------------------------------------
+     Total Time   32 secs
+-----------------------------------------------------
+  

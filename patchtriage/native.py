@@ -187,6 +187,18 @@ def _parse_literal_string(line: str) -> str | None:
     return None
 
 
+def _count_function_starts(binary_path: str) -> int | None:
+    """Count Mach-O LC_FUNCTION_STARTS entries (all functions incl. static)."""
+    try:
+        out = subprocess.run(
+            ["objdump", "--macho", "--function-starts", binary_path],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        return sum(1 for line in out.splitlines() if line.strip())
+    except Exception:
+        return None
+
+
 def run_native_extract(binary_path: str, output_path: str, reuse_cached: bool = True) -> dict:
     """Extract function-level features from symbolized binaries without Ghidra."""
     binary_path = os.path.abspath(binary_path)
@@ -202,6 +214,18 @@ def run_native_extract(binary_path: str, output_path: str, reuse_cached: bool = 
     symbols = _extract_text_symbols(binary_path)
     imports = _extract_imports(binary_path)
     disassembly = _parse_disassembly(binary_path, info["format"])
+
+    # Warn if many functions lack symbol names (partially stripped binary)
+    func_starts = _count_function_starts(binary_path)
+    if func_starts is not None and len(symbols) > 0:
+        coverage = len(symbols) / func_starts if func_starts else 1.0
+        if coverage < 0.7:
+            print(
+                f"  Warning: nm found {len(symbols)} symbols but binary has "
+                f"{func_starts} function entries ({coverage:.0%} coverage). "
+                f"Use --backend ghidra to analyze unsymbolized functions.",
+                flush=True,
+            )
 
     functions = []
     for sym in symbols:

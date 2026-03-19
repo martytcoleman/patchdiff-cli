@@ -30,7 +30,7 @@
       "match_score": 0.8796,
       "match_method": "name_exact",
       "uncertain": false,
-      "interestingness": 65.8,
+      "interestingness": 55.9,
       "signals": {
         "size_a": 396,
         "size_b": 684,
@@ -69,65 +69,9 @@
           63,
           112,
           127,
-          65536,
-          4294969792,
-          4294969836,
-          4294969844,
-          4294969852,
-          4294969856,
-          4294969892,
-          4294969936,
-          4294969988,
-          4294970000,
-          4294970108,
-          4294970216,
-          4294970248,
-          4294970304,
-          4294970396,
-          4294970404,
-          4294970444,
-          4294970456,
-          4294971072,
-          4294971084,
-          4294971096,
-          4294971108,
-          4294971120,
-          4294971132,
-          4294971144,
-          4294971192,
-          4294971204,
-          4294971216,
-          4294971228,
-          4294971240,
-          4294971252,
-          4294971264,
-          4294971392,
-          4294983680
+          65536
         ],
-        "constants_removed": [
-          4294967296,
-          4294969144,
-          4294969152,
-          4294969164,
-          4294969196,
-          4294969240,
-          4294969248,
-          4294969344,
-          4294969412,
-          4294969488,
-          4294970316,
-          4294970328,
-          4294970340,
-          4294970352,
-          4294970364,
-          4294970376,
-          4294970436,
-          4294970448,
-          4294970460,
-          4294970472,
-          4294970484,
-          4294970496
-        ],
+        "constants_removed": [],
         "constant_buckets_added": [
           "u32"
         ],
@@ -159,7 +103,7 @@
       "match_score": 0.3847,
       "match_method": "name_exact",
       "uncertain": false,
-      "interestingness": 41.6,
+      "interestingness": 38.6,
       "signals": {
         "size_a": 4,
         "size_b": 188,
@@ -195,17 +139,7 @@
           32,
           48,
           64,
-          256,
-          4294967296,
-          4294968704,
-          4294968736,
-          4294968780,
-          4294968836,
-          4294971048,
-          4294971060,
-          4294971096,
-          4294971276,
-          4294983680
+          256
         ],
         "constants_removed": [],
         "constant_buckets_added": [
@@ -244,7 +178,7 @@
       "match_score": 0.7802,
       "match_method": "name_exact",
       "uncertain": false,
-      "interestingness": 35.7,
+      "interestingness": 31.8,
       "signals": {
         "size_a": 172,
         "size_b": 288,
@@ -279,27 +213,9 @@
         "constants_added": [
           24,
           80,
-          287,
-          4294967296,
-          4294969112,
-          4294969156,
-          4294969184,
-          4294969244,
-          4294971072,
-          4294971096,
-          4294971120,
-          4294971204,
-          4294971240,
-          4294971252,
-          4294971392,
-          4294983680
+          287
         ],
-        "constants_removed": [
-          4294968760,
-          4294970304,
-          4294970316,
-          4294970448
-        ],
+        "constants_removed": [],
         "constant_buckets_added": [],
         "constant_buckets_removed": [],
         "api_families_added": [
@@ -331,7 +247,7 @@
       "match_score": 0.8089,
       "match_method": "name_exact",
       "uncertain": false,
-      "interestingness": 27.6,
+      "interestingness": 23.1,
       "signals": {
         "size_a": 180,
         "size_b": 308,
@@ -362,35 +278,11 @@
           8,
           24,
           36,
-          80,
-          4294969392,
-          4294969464,
-          4294969472,
-          4294969496,
-          4294969536,
-          4294969544,
-          4294969552,
-          4294969564,
-          4294969568,
-          4294969620,
-          4294969672,
-          4294971060,
-          4294971120,
-          4294971276,
-          4294971392
+          80
         ],
         "constants_removed": [
           13,
-          15,
-          4294968852,
-          4294968888,
-          4294968916,
-          4294968924,
-          4294968948,
-          4294968988,
-          4294968996,
-          4294969004,
-          4294970508
+          15
         ],
         "constant_buckets_added": [],
         "constant_buckets_removed": [],
@@ -419,7 +311,7 @@
       "match_score": 0.8657,
       "match_method": "name_exact",
       "uncertain": false,
-      "interestingness": 18.8,
+      "interestingness": 16.7,
       "signals": {
         "size_a": 112,
         "size_b": 156,
@@ -449,22 +341,9 @@
         ],
         "constants_added": [
           63,
-          127,
-          4294968516,
-          4294968524,
-          4294968552,
-          4294971072,
-          4294971204,
-          4294971228,
-          4294971240
+          127
         ],
-        "constants_removed": [
-          4294968532,
-          4294968564,
-          4294970316,
-          4294970448,
-          4294970460
-        ],
+        "constants_removed": [],
         "constant_buckets_added": [],
         "constant_buckets_removed": [],
         "api_families_added": [],
@@ -495,7 +374,7 @@
       "match_score": 0.8904,
       "match_method": "name_exact",
       "uncertain": false,
-      "interestingness": 13.2,
+      "interestingness": 10.8,
       "signals": {
         "size_a": 320,
         "size_b": 168,
@@ -521,15 +400,7 @@
         ],
         "constants_added": [
           256,
-          272,
-          4294970944,
-          4294971000,
-          4294971044,
-          4294971060,
-          4294971108,
-          4294971156,
-          4294971168,
-          4294971392
+          272
         ],
         "constants_removed": [
           1,
@@ -547,24 +418,7 @@
           63,
           320,
           336,
-          352,
-          4294967296,
-          4294969996,
-          4294970036,
-          4294970072,
-          4294970100,
-          4294970108,
-          4294970132,
-          4294970172,
-          4294970180,
-          4294970188,
-          4294970276,
-          4294970292,
-          4294970352,
-          4294970388,
-          4294970400,
-          4294970412,
-          4294970508
+          352
         ],
         "constant_buckets_added": [],
         "constant_buckets_removed": [
@@ -578,75 +432,6 @@
         "string_categories_removed": [],
         "branch_delta": -10,
         "compare_delta": -3
-      }
-    },
-    {
-      "name_a": "_print_request",
-      "name_b": "_print_request",
-      "entry_a": "00000001000008cc",
-      "entry_b": "0000000100000c94",
-      "roles_a": [
-        "formatter"
-      ],
-      "roles_b": [
-        "formatter"
-      ],
-      "match_score": 0.953,
-      "match_method": "name_exact",
-      "uncertain": false,
-      "interestingness": 8.9,
-      "signals": {
-        "size_a": 252,
-        "size_b": 248,
-        "size_delta": -4,
-        "size_delta_pct": -1.6,
-        "blocks_a": 14,
-        "blocks_b": 14,
-        "blocks_delta": 0,
-        "instr_a": 63,
-        "instr_b": 62,
-        "instr_delta": -1,
-        "strings_added": [],
-        "strings_removed": [],
-        "ext_calls_added": [
-          "_snprintf"
-        ],
-        "ext_calls_removed": [
-          "___sprintf_chk"
-        ],
-        "calls_added": [
-          "_snprintf"
-        ],
-        "calls_removed": [
-          "___sprintf_chk"
-        ],
-        "constants_added": [
-          4294970716,
-          4294970752,
-          4294970780,
-          4294970828,
-          4294971060,
-          4294971156,
-          4294971180,
-          4294971392
-        ],
-        "constants_removed": [
-          4294969752,
-          4294969788,
-          4294969816,
-          4294969864,
-          4294970280,
-          4294970292,
-          4294970388
-        ],
-        "constant_buckets_added": [],
-        "constant_buckets_removed": [],
-        "api_families_added": [],
-        "api_families_removed": [],
-        "string_categories_added": [],
-        "string_categories_removed": [],
-        "branch_delta": 0,
-        "compare_delta": 0
       }
     },
     {
@@ -665,7 +450,7 @@
       "match_score": 0.87,
       "match_method": "name_exact",
       "uncertain": false,
-      "interestingness": 6.8,
+      "interestingness": 6.5,
       "signals": {
         "size_a": 32,
         "size_b": 32,
@@ -691,12 +476,60 @@
         "calls_removed": [
           "_sprintf"
         ],
-        "constants_added": [
-          4294971180
+        "constants_added": [],
+        "constants_removed": [],
+        "constant_buckets_added": [],
+        "constant_buckets_removed": [],
+        "api_families_added": [],
+        "api_families_removed": [],
+        "string_categories_added": [],
+        "string_categories_removed": [],
+        "branch_delta": 0,
+        "compare_delta": 0
+      }
+    },
+    {
+      "name_a": "_print_request",
+      "name_b": "_print_request",
+      "entry_a": "00000001000008cc",
+      "entry_b": "0000000100000c94",
+      "roles_a": [
+        "formatter"
+      ],
+      "roles_b": [
+        "formatter"
+      ],
+      "match_score": 0.953,
+      "match_method": "name_exact",
+      "uncertain": false,
+      "interestingness": 6.5,
+      "signals": {
+        "size_a": 252,
+        "size_b": 248,
+        "size_delta": -4,
+        "size_delta_pct": -1.6,
+        "blocks_a": 14,
+        "blocks_b": 14,
+        "blocks_delta": 0,
+        "instr_a": 63,
+        "instr_b": 62,
+        "instr_delta": -1,
+        "strings_added": [],
+        "strings_removed": [],
+        "ext_calls_added": [
+          "_snprintf"
         ],
-        "constants_removed": [
-          4294970424
+        "ext_calls_removed": [
+          "___sprintf_chk"
         ],
+        "calls_added": [
+          "_snprintf"
+        ],
+        "calls_removed": [
+          "___sprintf_chk"
+        ],
+        "constants_added": [],
+        "constants_removed": [],
         "constant_buckets_added": [],
         "constant_buckets_removed": [],
         "api_families_added": [],
@@ -747,8 +580,7 @@
         "constants_added": [],
         "constants_removed": [
           10,
-          16,
-          4294970388
+          16
         ],
         "constant_buckets_added": [],
         "constant_buckets_removed": [
@@ -779,7 +611,7 @@
       "match_score": 1.05,
       "match_method": "name_exact",
       "uncertain": false,
-      "interestingness": 0.6,
+      "interestingness": 0.0,
       "signals": {
         "size_a": 44,
         "size_b": 44,
@@ -797,14 +629,8 @@
         "ext_calls_removed": [],
         "calls_added": [],
         "calls_removed": [],
-        "constants_added": [
-          4294970512,
-          4294971108
-        ],
-        "constants_removed": [
-          4294969544,
-          4294970352
-        ],
+        "constants_added": [],
+        "constants_removed": [],
         "constant_buckets_added": [],
         "constant_buckets_removed": [],
         "api_families_added": [],

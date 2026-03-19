@@ -48,8 +48,15 @@ def _run_pipeline(binary_a: str, binary_b: str, *,
 
     name_a = Path(binary_a).stem
     name_b = Path(binary_b).stem
-    feat_a_path = os.path.join(outdir, f"{name_a}_features.json")
-    feat_b_path = os.path.join(outdir, f"{name_b}_features.json")
+    # Disambiguate when both binaries have the same stem (e.g. zstd vs zstd)
+    if name_a == name_b:
+        parent_a = Path(binary_a).parent.name or "a"
+        parent_b = Path(binary_b).parent.name or "b"
+        feat_a_path = os.path.join(outdir, f"{name_a}_{parent_a}_features.json")
+        feat_b_path = os.path.join(outdir, f"{name_b}_{parent_b}_features.json")
+    else:
+        feat_a_path = os.path.join(outdir, f"{name_a}_features.json")
+        feat_b_path = os.path.join(outdir, f"{name_b}_features.json")
     diff_path = os.path.join(outdir, "diff.json")
 
     class_a = classify_binary(binary_a)

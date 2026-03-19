@@ -154,6 +154,51 @@ def compute_similarity(fa: dict, fb: dict, *, stripped: bool = False) -> float:
     return score
 
 
+def _is_plausible_rename(name_a: str, name_b: str) -> bool:
+    """Check if two function names could plausibly be renames of each other."""
+    na = normalize_symbol(name_a).lower()
+    nb = normalize_symbol(name_b).lower()
+    if na == nb:
+        return True
+    # Strip underscores to catch snake_case ↔ camelCase (usage_advanced → usageAdvanced)
+    na_flat = na.replace("_", "")
+    nb_flat = nb.replace("_", "")
+    if na_flat == nb_flat:
+        return True
+    # One is a substring of the other (e.g. foo → foo_internal)
+    if na in nb or nb in na:
+        return True
+    min_len = min(len(na), len(nb))
+    max_len = max(len(na), len(nb))
+    if min_len >= 6:
+        # Share a significant common prefix (e.g. ZSTD_compress... variants)
+        # Use max_len to avoid matching short namespace prefixes (kex_, kdf_)
+        prefix_len = 0
+        for ca, cb in zip(na, nb):
+            if ca != cb:
+                break
+            prefix_len += 1
+        if prefix_len >= max_len * 0.4 and prefix_len >= 6:
+            return True
+        # Share a significant common suffix (e.g. ...BufferPool variants)
+        # Use stricter threshold than prefix — common suffixes like _handler,
+        # _init, _free would otherwise cause false matches.
+        suffix_len = 0
+        for ca, cb in zip(reversed(na), reversed(nb)):
+            if ca != cb:
+                break
+            suffix_len += 1
+        max_len = max(len(na), len(nb))
+        if suffix_len >= 10 and suffix_len >= max_len * 0.4:
+            return True
+    return False
+
+
+def _has_plausible_rename(name: str, candidate_names: set[str]) -> bool:
+    """Check if any candidate name is a plausible rename of the given name."""
+    return any(_is_plausible_rename(name, cn) for cn in candidate_names)
+
+
 def match_functions(features_a: dict, features_b: dict,
                     threshold: float = 0.3,
                     uncertain_gap: float = 0.05,
@@ -186,22 +231,86 @@ def match_functions(features_a: dict, features_b: dict,
             if name.startswith("FUN_") or name.startswith("thunk_FUN_"):
                 continue
             if name in name_idx_b:
-                candidates = name_idx_b[name]
+                candidates = [j for j in name_idx_b[name] if j not in used_b]
                 if len(candidates) == 1:
                     j = candidates[0]
-                    if j not in used_b:
-                        score = compute_similarity(fa, funcs_b[j], stripped=stripped)
+                    score = compute_similarity(fa, funcs_b[j], stripped=stripped)
+                    matches.append(MatchResult(
+                        name_a=fa["name"], name_b=funcs_b[j]["name"],
+                        entry_a=fa["entry"], entry_b=funcs_b[j]["entry"],
+                        score=score, method="name_exact",
+                    ))
+                    used_a.add(i)
+                    used_b.add(j)
+                elif len(candidates) > 1:
+                    # Multiple same-named candidates: pick the best by similarity
+                    best_j, best_score = -1, -1.0
+                    for j in candidates:
+                        s = compute_similarity(fa, funcs_b[j], stripped=stripped)
+                        if s > best_score:
+                            best_score = s
+                            best_j = j
+                    if best_j >= 0:
                         matches.append(MatchResult(
-                            name_a=fa["name"], name_b=funcs_b[j]["name"],
-                            entry_a=fa["entry"], entry_b=funcs_b[j]["entry"],
-                            score=score, method="name_exact",
+                            name_a=fa["name"], name_b=funcs_b[best_j]["name"],
+                            entry_a=fa["entry"], entry_b=funcs_b[best_j]["entry"],
+                            score=best_score, method="name_exact_multi",
                         ))
                         used_a.add(i)
-                        used_b.add(j)
+                        used_b.add(best_j)
+
+    # --- Pass 1.5: exclude named functions with no plausible counterpart ---
+    # When a symbolized function exists in A but not B (or vice versa), check
+    # if any remaining name in the other side is a plausible rename.  If not,
+    # the function was definitively removed/added — exclude it from the
+    # similarity pass so it doesn't get force-paired with unrelated code.
+    name_only_a: set[int] = set()  # indices definitively only in A
+    name_only_b: set[int] = set()  # indices definitively only in B
+    if not stripped:
+        name_idx_a = {}
+        for i, f in enumerate(funcs_a):
+            name_idx_a.setdefault(f["name"], []).append(i)
+
+        # Collect remaining (unmatched) names on each side for rename checks
+        remaining_names_b = set()
+        for j, fb in enumerate(funcs_b):
+            if j not in used_b:
+                name = fb["name"]
+                if not name.startswith("FUN_") and not name.startswith("thunk_FUN_"):
+                    remaining_names_b.add(name)
+
+        remaining_names_a = set()
+        for i, fa in enumerate(funcs_a):
+            if i not in used_a:
+                name = fa["name"]
+                if not name.startswith("FUN_") and not name.startswith("thunk_FUN_"):
+                    remaining_names_a.add(name)
+
+        for i, fa in enumerate(funcs_a):
+            if i in used_a:
+                continue
+            name = fa["name"]
+            if name.startswith("FUN_") or name.startswith("thunk_FUN_"):
+                continue
+            if name not in name_idx_b:
+                if not _has_plausible_rename(name, remaining_names_b):
+                    name_only_a.add(i)
+
+        for j, fb in enumerate(funcs_b):
+            if j in used_b:
+                continue
+            name = fb["name"]
+            if name.startswith("FUN_") or name.startswith("thunk_FUN_"):
+                continue
+            if name not in name_idx_a:
+                if not _has_plausible_rename(name, remaining_names_a):
+                    name_only_b.add(j)
 
     # --- Pass 2: similarity-based matching for remaining functions ---
-    remaining_a = [(i, f) for i, f in enumerate(funcs_a) if i not in used_a]
-    remaining_b = [(j, f) for j, f in enumerate(funcs_b) if j not in used_b]
+    skip_a = used_a | name_only_a
+    skip_b = used_b | name_only_b
+    remaining_a = [(i, f) for i, f in enumerate(funcs_a) if i not in skip_a]
+    remaining_b = [(j, f) for j, f in enumerate(funcs_b) if j not in skip_b]
 
     large_match = len(remaining_a) * len(remaining_b) >= 100000
     if large_match:
@@ -279,6 +388,7 @@ def match_functions(features_a: dict, features_b: dict,
 
     unmatched_a = [funcs_a[i]["name"] for i in range(len(funcs_a)) if i not in used_a]
     unmatched_b = [funcs_b[j]["name"] for j in range(len(funcs_b)) if j not in used_b]
+    # name_only sets are already excluded from used_a/used_b, so they appear here
 
     return {
         "binary_a": features_a.get("binary", "A"),

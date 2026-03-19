@@ -27,3 +27,104 @@ Linking the External Programs of 'sqlite3' to imported libraries...
   
 2026-03-19 15:09:48 INFO  (LocalFileSystem) /sqlite3: file created (marty)  
 2026-03-19 15:10:02 INFO  (DecompilerSwitchAnalyzer) hit non-returning function, restarting decompiler switch analyzer later  
+2026-03-19 15:12:29 ERROR (VarnodeContext) VarnodeContext: out of address spaces at @1000181f8 for: x11-1000181f8  
+2026-03-19 15:13:15 DEBUG (FidAnalyzer) No FID Libraries apply for language AARCH64:LE:64:AppleSilicon  
+2026-03-19 15:13:15 INFO  (PackedDatabaseCache) Packed database cache: /var/tmp/marty-ghidra/packed-db-cache  
+2026-03-19 15:13:15 DEBUG (PackedDatabaseCache) Using cached packed database: /Users/marty/ghidra_12.0_PUBLIC/Ghidra/Features/Base/data/typeinfo/mac_10.9/mac_osx.gdt  
+2026-03-19 15:13:15 INFO  (ApplyDataArchiveAnalyzer) Applied data type archive: mac_osx  
+2026-03-19 15:13:29 ERROR (VarnodeContext) VarnodeContext: out of address spaces at @100013670 for: d29-100013670  
+2026-03-19 15:13:36 INFO  (AutoAnalysisManager) -----------------------------------------------------
+    AARCH64 ELF PLT Thunks                     0.000 secs
+    ASCII Strings                              0.697 secs
+    Apply Data Archives                        0.732 secs
+    Basic Constant Reference Analyzer         27.303 secs
+    Call Convention ID                         3.040 secs
+    Call-Fixup Installer                       0.040 secs
+    Create Address Tables                      0.443 secs
+    Create Address Tables - One Time           0.206 secs
+    Create Function                            1.369 secs
+    Data Reference                             2.659 secs
+    Decompiler Switch Analysis                79.206 secs
+    Decompiler Switch Analysis - One Time     65.054 secs
+    Demangler GNU                              0.045 secs
+    Disassemble                               11.821 secs
+    Disassemble Entry Points                  10.938 secs
+    Disassemble Entry Points - One Time        0.214 secs
+    Embedded Media                             0.068 secs
+    External Entry References                  0.003 secs
+    Function ID                                0.076 secs
+    Function Start Search                      0.425 secs
+    Function Start Search After Code           0.175 secs
+    Function Start Search After Data           0.161 secs
+    Function Start Search delayed - One Time   0.260 secs
+    Mach-O Function Starts                     1.164 secs
+    Non-Returning Functions - Discovered       1.335 secs
+    Non-Returning Functions - Known            0.012 secs
+    Reference                                  1.151 secs
+    Shared Return Calls                        1.310 secs
+    Stack                                     14.250 secs
+    Subroutine References                      2.669 secs
+    Subroutine References - One Time           0.006 secs
+-----------------------------------------------------
+     Total Time   226 secs
+-----------------------------------------------------
+  
+2026-03-19 15:14:01 INFO  (DefaultProject) Creating project: /Users/marty/patchdiff-cli/corpus/sqlite/results/sqlite3_ghidra_bx97zehl/sqlite3_ghidra/sqlite3_ghidra  
+2026-03-19 15:14:01 INFO  (ProgramLoader) Using Loader: Mac OS X Mach-O  
+2026-03-19 15:14:01 INFO  (ProgramLoader) Using Language/Compiler: AARCH64:LE:64:AppleSilicon:default  
+2026-03-19 15:14:01 INFO  (ProgramLoader) Using Library Search Path: [., /System/Library/dyld/dyld_shared_cache_arm64e, /System/Library/dyld/dyld_shared_cache_x86_64, /System/Library/dyld/dyld_shared_cache_x86_64h, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64h, /Users/marty/Library/Java/Extensions, /Library/Java/Extensions, /Network/Library/Java/Extensions, /System/Library/Java/Extensions, /usr/lib/java]  
+2026-03-19 15:14:01 INFO  (ProgramLoader) Additional info:
+Loading file:///Users/marty/patchdiff-cli/corpus/sqlite/v3510300/sqlite3?MD5=bec8c7cd6e660772fa880393ec6937ef...
+Discovered 2910 DYLD_CHAINED_PTR_64_OFFSET chained pointers.
+Fixed up 2910 chained pointers.
+------------------------------------------------
+
+Linking the External Programs of 'sqlite3' to imported libraries...
+  [/usr/lib/libz.1.dylib] -> not found in project
+  [/usr/lib/libSystem.B.dylib] -> not found in project
+------------------------------------------------
+
+  
+2026-03-19 15:14:01 INFO  (LocalFileSystem) /sqlite3: file created (marty)  
+2026-03-19 15:14:06 INFO  (DecompilerSwitchAnalyzer) hit non-returning function, restarting decompiler switch analyzer later  
+2026-03-19 15:15:47 ERROR (VarnodeContext) VarnodeContext: out of address spaces at @1000138f8 for: x11-1000138f8  
+2026-03-19 15:16:09 DEBUG (FidAnalyzer) No FID Libraries apply for language AARCH64:LE:64:AppleSilicon  
+2026-03-19 15:16:09 DEBUG (PackedDatabaseCache) Using cached packed database: /Users/marty/ghidra_12.0_PUBLIC/Ghidra/Features/Base/data/typeinfo/mac_10.9/mac_osx.gdt  
+2026-03-19 15:16:10 INFO  (ApplyDataArchiveAnalyzer) Applied data type archive: mac_osx  
+2026-03-19 15:16:16 ERROR (VarnodeContext) VarnodeContext: out of address spaces at @100013884 for: d29-100013884  
+2026-03-19 15:16:28 INFO  (AutoAnalysisManager) -----------------------------------------------------
+    AARCH64 ELF PLT Thunks                     0.000 secs
+    ASCII Strings                              0.182 secs
+    Apply Data Archives                        0.435 secs
+    Basic Constant Reference Analyzer         13.258 secs
+    Call Convention ID                         2.940 secs
+    Call-Fixup Installer                       0.023 secs
+    Create Address Tables                      0.336 secs
+    Create Address Tables - One Time           0.175 secs
+    Create Function                            0.866 secs
+    Data Reference                             1.236 secs
+    Decompiler Switch Analysis                39.445 secs
+    Decompiler Switch Analysis - One Time     62.587 secs
+    Demangler GNU                              0.018 secs
+    Disassemble                                3.542 secs
+    Disassemble Entry Points                   3.369 secs
+    Disassemble Entry Points - One Time        0.074 secs
+    Embedded Media                             0.035 secs
+    External Entry References                  0.003 secs
+    Function ID                                0.000 secs
+    Function Start Search                      0.136 secs
+    Function Start Search After Code           0.133 secs
+    Function Start Search After Data           0.114 secs
+    Function Start Search delayed - One Time   0.293 secs
+    Mach-O Function Starts                     0.968 secs
+    Non-Returning Functions - Discovered       0.611 secs
+    Non-Returning Functions - Known            0.005 secs
+    Reference                                  0.671 secs
+    Shared Return Calls                        0.696 secs
+    Stack                                     13.186 secs
+    Subroutine References                      1.146 secs
+    Subroutine References - One Time           0.002 secs
+-----------------------------------------------------
+     Total Time   146 secs
+-----------------------------------------------------
+  

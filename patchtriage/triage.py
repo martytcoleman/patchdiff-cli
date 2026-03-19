@@ -161,8 +161,14 @@ def triage_function(func_diff: dict) -> dict:
         sec_score += 2.0
 
     # --- Heuristic 4: new error strings ---
+    # Skip very long strings (>500 chars) — they are typically embedded
+    # data, source code, or language runtimes that incidentally contain
+    # error-like keywords (e.g. jq's stdlib contains "error" as a
+    # language construct).
     error_strings = []
     for s in strings_added:
+        if len(s) > 500:
+            continue
         sl = s.lower()
         if any(kw in sl for kw in ERROR_KEYWORDS):
             error_strings.append(s)
@@ -303,14 +309,59 @@ def triage_function(func_diff: dict) -> dict:
     }
 
 
+def _detect_extract_and_harden(diff_data: dict) -> dict[str, list[str]]:
+    """Detect the 'extract-and-harden' pattern: a function shrinks dramatically
+    and a new function with a related name appears in B.
+
+    Returns {name_a: [related new functions in B]}.
+    """
+    unmatched_b = set(diff_data.get("unmatched_b", []))
+    if not unmatched_b:
+        return {}
+
+    result: dict[str, list[str]] = {}
+    for func in diff_data.get("functions", []):
+        pct = func.get("signals", {}).get("size_delta_pct", 0)
+        if pct >= -30:  # only consider significant shrinkage
+            continue
+        name_a = _normalize_symbol(str(func.get("name_a", "")))
+        if len(name_a) < 4:
+            continue
+        # Check if any new-in-B function name contains the original stem
+        related = []
+        for ub in unmatched_b:
+            ub_norm = _normalize_symbol(str(ub))
+            if name_a in ub_norm or ub_norm in name_a:
+                related.append(ub)
+        if related:
+            result[func.get("name_a", "")] = related
+    return result
+
+
 def triage_diff(diff_data: dict) -> dict:
     """Apply triage heuristics to all functions in a diff.
 
     Mutates diff_data in-place by adding triage info to each function entry.
     Also returns the modified diff_data.
     """
+    # Detect extract-and-harden patterns before per-function triage
+    extract_harden = _detect_extract_and_harden(diff_data)
+
     for func in diff_data.get("functions", []):
         triage = triage_function(func)
+
+        # Upgrade functions that match the extract-and-harden pattern
+        name_a = func.get("name_a", "")
+        if name_a in extract_harden:
+            related = extract_harden[name_a]
+            triage["rationale"].append(
+                f"Function shrunk significantly and related function(s) added in B: "
+                f"{', '.join(related)} — possible extract-and-harden refactor"
+            )
+            triage["confidence"] = max(triage["confidence"], 0.25)
+            if triage["triage_label"] in ("refactor", "unchanged", "unknown"):
+                triage["triage_label"] = "security_fix_possible"
+
         func["triage_label"] = triage["triage_label"]
         func["triage_rationale"] = triage["rationale"]
         func["triage_confidence"] = triage["confidence"]

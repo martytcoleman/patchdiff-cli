@@ -42,6 +42,9 @@ def classify_binary(path: str) -> dict:
     if b"go buildinf:" in prefix or b"runtime." in prefix or b"type.." in prefix:
         language = "go"
         reasons.append("Go build/runtime markers detected")
+    elif fmt == "macho" and _has_go_section(path):
+        language = "go"
+        reasons.append("Go __gopclntab section detected")
     elif any(marker in lower for marker in (b"rustc", b"core::", b"alloc::", b"panicked at", b"std::")):
         language = "rust"
         reasons.append("Rust symbol/string markers detected")
@@ -68,6 +71,18 @@ def classify_binary(path: str) -> dict:
         "recommended_profile": profile,
         "reasons": reasons,
     }
+
+
+def _has_go_section(path: str) -> bool:
+    """Check if a Mach-O binary has a __gopclntab section (definitive Go signal)."""
+    try:
+        result = subprocess.run(
+            ["otool", "-l", path],
+            capture_output=True, text=True, check=True,
+        )
+        return "__gopclntab" in result.stdout
+    except Exception:
+        return False
 
 
 def _count_text_symbols(path: str) -> int:

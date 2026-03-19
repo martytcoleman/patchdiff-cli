@@ -23,9 +23,13 @@ def _run_pipeline(binary_a: str, binary_b: str, *,
                   threshold: float = 0.3,
                   ghidra: str | None = None,
                   stripped: bool = False,
-                  force_extract: bool = False):
+                  force_extract: bool = False,
+                  profile: str = "auto",
+                  backend: str = "auto"):
     """Core pipeline: extract -> diff -> triage -> (llm) -> report."""
+    from .classify import classify_binary
     from .extract import run_extract
+    from .light import run_light_extract
     from .matcher import match_functions
     from .analyzer import analyze_diff
     from .triage import triage_diff
@@ -47,9 +51,34 @@ def _run_pipeline(binary_a: str, binary_b: str, *,
     feat_b_path = os.path.join(outdir, f"{name_b}_features.json")
     diff_path = os.path.join(outdir, "diff.json")
 
+    class_a = classify_binary(binary_a)
+    class_b = classify_binary(binary_b)
+    selected_backend = backend
+    if backend == "auto":
+        if (
+            class_a["language"] in {"go", "rust"}
+            or class_b["language"] in {"go", "rust"}
+            or class_a["challenging"]
+            or class_b["challenging"]
+        ):
+            selected_backend = "light"
+        else:
+            selected_backend = "ghidra"
+    print(f"Selected backend: {selected_backend}", flush=True)
+
     # ── Step 1: Extract ──
-    feat_a = run_extract(binary_a, feat_a_path, ghidra_path=ghidra, reuse_cached=not force_extract)
-    feat_b = run_extract(binary_b, feat_b_path, ghidra_path=ghidra, reuse_cached=not force_extract)
+    if selected_backend == "light":
+        feat_a = run_light_extract(binary_a, feat_a_path, reuse_cached=not force_extract)
+        feat_b = run_light_extract(binary_b, feat_b_path, reuse_cached=not force_extract)
+    else:
+        feat_a = run_extract(
+            binary_a, feat_a_path, ghidra_path=ghidra,
+            reuse_cached=not force_extract, profile=profile,
+        )
+        feat_b = run_extract(
+            binary_b, feat_b_path, ghidra_path=ghidra,
+            reuse_cached=not force_extract, profile=profile,
+        )
 
     # ── Step 2: Match + Analyze ──
     print(f"\nMatching {_c(BOLD, str(feat_a['num_functions']))} vs "
@@ -106,13 +135,31 @@ def _run_pipeline(binary_a: str, binary_b: str, *,
 
 def cmd_extract(args):
     """Extract features from a single binary."""
+    from .classify import classify_binary
     from .extract import run_extract
+    from .light import run_light_extract
 
     output = args.output
     if output is None:
         output = os.path.abspath(f"{Path(args.binary).stem}_features.json")
-    data = run_extract(args.binary, output, ghidra_path=args.ghidra, reuse_cached=not args.force)
-    print(f"Summary: {data['num_functions']} functions, arch={data.get('arch', 'unknown')}")
+    selected_backend = args.backend
+    if selected_backend == "auto":
+        info = classify_binary(args.binary)
+        selected_backend = "light" if (info["language"] in {"go", "rust"} or info["challenging"]) else "ghidra"
+    if selected_backend == "light":
+        data = run_light_extract(args.binary, output, reuse_cached=not args.force)
+    else:
+        data = run_extract(
+            args.binary,
+            output,
+            ghidra_path=args.ghidra,
+            reuse_cached=not args.force,
+            profile=args.profile,
+        )
+    print(
+        f"Summary: {data['num_functions']} functions, arch={data.get('arch', 'unknown')}, "
+        f"profile={data.get('analysis_profile', 'unknown')}, backend={data.get('backend', selected_backend)}"
+    )
 
 
 def cmd_diff(args):
@@ -162,6 +209,8 @@ def cmd_run(args):
         ghidra=args.ghidra,
         stripped=args.stripped,
         force_extract=args.force,
+        profile=args.profile,
+        backend=args.backend,
     )
 
 
@@ -257,6 +306,10 @@ def main():
                         help="Ignore function names during matching; use structural/contextual signals only")
     p_run.add_argument("--force", action="store_true",
                         help="Force re-extraction even if cached feature JSONs already match the input binaries")
+    p_run.add_argument("--profile", choices=["auto", "fast", "full"], default="auto",
+                        help="Extraction profile: auto selects based on binary pre-scan")
+    p_run.add_argument("--backend", choices=["auto", "ghidra", "light"], default="auto",
+                        help="Extraction backend: auto picks light for likely Go/Rust binaries")
     p_run.set_defaults(func=cmd_run)
 
     # --- extract ---
@@ -266,6 +319,10 @@ def main():
     p_extract.add_argument("--ghidra", default=None, help="Path to Ghidra install directory")
     p_extract.add_argument("--force", action="store_true",
                            help="Force extraction even if a matching cached feature file already exists")
+    p_extract.add_argument("--profile", choices=["auto", "fast", "full"], default="auto",
+                           help="Extraction profile: auto selects based on binary pre-scan")
+    p_extract.add_argument("--backend", choices=["auto", "ghidra", "light"], default="auto",
+                           help="Extraction backend: auto picks light for likely Go/Rust binaries")
     p_extract.set_defaults(func=cmd_extract)
 
     # --- diff ---

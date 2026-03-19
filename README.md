@@ -53,12 +53,32 @@ For stripped binaries:
 patchtriage run ./binaries/program_v1 ./binaries/program_v2 -o out --stripped --html
 ```
 
+By default, `run` reuses cached `*_features.json` files when they already match the input binaries. Use `--force` to re-run extraction:
+
+```bash
+patchtriage run ./binaries/program_v1 ./binaries/program_v2 -o out --stripped --force
+```
+
 ### Step 1: Extract Features
 
 ```bash
 patchtriage extract ./binaries/program_v1 -o features_v1.json
 patchtriage extract ./binaries/program_v2 -o features_v2.json
 ```
+
+`extract` prints progress and a short summary to the terminal and writes the feature JSON to disk. It also reuses an existing matching feature file unless `--force` is passed.
+
+Extraction profiles:
+
+- `--profile auto`: choose `fast` or `full` from a cheap binary pre-scan
+- `--profile fast`: cheaper extraction path for large or difficult binaries
+- `--profile full`: richest extraction path
+
+Extraction backends:
+
+- `--backend ghidra`: full Ghidra-backed extraction
+- `--backend light`: coarse non-Ghidra extraction using system tools such as `file`, `nm`, `strings`, `otool`, and `objdump`
+- `--backend auto`: choose `light` for likely Go/Rust binaries, otherwise `ghidra`
 
 This runs Ghidra's `analyzeHeadless` with a custom Jython script (`ghidra_scripts/extract_features.py`) that extracts per-function:
 
@@ -75,6 +95,8 @@ This runs Ghidra's `analyzeHeadless` with a custom Jython script (`ghidra_script
 ```bash
 patchtriage diff features_v1.json features_v2.json -o diff.json
 ```
+
+`diff` prints matching progress plus a short terminal summary of the top changed functions, and writes the full machine-readable diff to disk.
 
 **Matching algorithm:**
 
@@ -113,6 +135,8 @@ patchtriage diff features_v1.json features_v2.json -o diff.json
 ```bash
 patchtriage report diff.json --html
 ```
+
+`report` prints the triaged review queue to the terminal and also writes Markdown/HTML output files.
 
 Applies **triage heuristics** and generates a ranked Markdown report (and optional HTML).
 
@@ -240,6 +264,107 @@ You do not need custom scripts to use PatchTriage:
 - `patchtriage diff <features_a> <features_b>`: match and analyze without rerunning Ghidra
 - `patchtriage report <diff.json>`: regenerate triage/report views from saved diff data
 - `patchtriage evaluate <corpus.json>`: run fixture-based evaluation
+
+What prints to the terminal:
+
+- `run`: progress, matching summary, and final triage report
+- `extract`: progress and a one-line feature summary
+- `diff`: matching progress and a top-changes summary
+- `report`: the triaged review queue and report summary
+
+What writes files:
+
+- `extract`: feature JSON
+- `diff`: diff JSON
+- `report`: Markdown/HTML plus triaged JSON
+- `run`: feature JSONs, diff JSON, Markdown/HTML, final report JSON
+
+## Reliability Notes
+
+PatchTriage is most useful as a triage tool, not as a complete semantic decompiler. The goal is to help answer:
+
+> Which changed functions should I reverse first?
+
+Current strengths:
+
+- native CLI binaries with conventional function boundaries
+- stripped binaries where coarse structural matching is still possible
+- repeated workflows where cached feature reuse avoids rerunning Ghidra
+
+Current weak spots:
+
+- very large binaries with thousands of functions
+- Go binaries, where Ghidra's Go analyzers can be noisy or unstable
+- large stripped Rust binaries, where analysis can be slow and runtime-heavy
+
+Adaptive behavior:
+
+- PatchTriage performs a cheap pre-scan before extraction
+- likely Go/Rust or large binaries default to `--profile fast`
+- small conventional native binaries default to `--profile full`
+- cached feature reuse avoids rerunning extraction on repeated CLI use
+- `--backend auto` can route likely Go/Rust binaries to the light backend instead of forcing full Ghidra extraction
+
+Light backend characteristics:
+
+- much more reliable on binaries where Ghidra analysis is unstable or prohibitively slow
+- much coarser than Ghidra-backed extraction
+- focuses on imports, import-family groupings, strings, available text symbols, section layout, and cheap disassembly-derived mnemonic summaries
+- intended to provide a useful fallback, not identical fidelity
+
+What the light backend still gives you:
+
+- a whole-binary summary node with imports, strings, and coarse instruction mix
+- import-family nodes such as `imports:string` or `imports:file`
+- section nodes such as `section:__TEXT:__text` or `.text`
+- named text-symbol nodes when symbols are present
+
+This is meant to preserve useful CLI triage on difficult binaries:
+
+- "did parsing/input-handling-related areas change?"
+- "did import families shift toward validation, file, network, or memory code?"
+- "which coarse regions changed enough to merit manual review?"
+
+## Tested Targets
+
+The following targets were exercised during development:
+
+- checked-in open-source sample in `targets/open_source/`: good
+- `jq 1.7 -> 1.7.1`: good real-world triage surface
+- `yq 4.48.2 -> 4.49.1`: poor target for now because Ghidra's Go analysis was slow/noisy
+- `ripgrep 14.1.0 -> 14.1.1`: downloads worked, but full stripped Rust analysis remained heavy
+
+Interpretation:
+
+- a clean result on `jq` suggests the tool is already useful on some native binaries
+- poor results on `yq`/`ripgrep` are currently more about backend analysis limits than the triage heuristics alone
+- if Ghidra struggles to produce stable functions and symbols, PatchTriage quality drops accordingly
+
+## Recommended Workflow
+
+For normal CLI use:
+
+```bash
+patchtriage run old.bin new.bin -o out --stripped
+```
+
+For large or expensive targets, prefer reusable stages:
+
+```bash
+patchtriage extract old.bin -o old_features.json
+patchtriage extract new.bin -o new_features.json
+patchtriage diff old_features.json new_features.json -o diff.json --stripped
+patchtriage report diff.json --top 20
+```
+
+On reruns, reuse saved feature JSONs whenever possible instead of re-running extraction.
+
+## Known Limitations
+
+- PatchTriage still depends heavily on Ghidra for function discovery and low-level program structure.
+- On difficult binaries, Ghidra analysis time can dominate total runtime.
+- The tool currently provides stronger ranking than explanation on stripped real-world binaries.
+- Anonymous functions may still surface in top results when the binary lacks stable symbolic context.
 
 ## JSON Schemas
 

@@ -205,6 +205,28 @@ def compute_interestingness(signals: dict) -> float:
     return round(score, 2)
 
 
+def _adjust_interestingness(raw_score: float, func_a: dict, func_b: dict, signals: dict) -> float:
+    """Downweight low-evidence anonymous churn that often dominates stripped binaries."""
+    auto_named = _is_auto_name(func_a.get("name", "")) and _is_auto_name(func_b.get("name", ""))
+    only_internal_churn = (
+        signals.get("calls_added") or signals.get("calls_removed")
+    ) and not any([
+        signals.get("ext_calls_added"),
+        signals.get("ext_calls_removed"),
+        signals.get("strings_added"),
+        signals.get("strings_removed"),
+        signals.get("api_families_added"),
+        signals.get("string_categories_added"),
+        signals.get("compare_delta", 0) > 0,
+        signals.get("branch_delta", 0) > 0,
+        abs(signals.get("blocks_delta", 0)) > 2,
+        abs(signals.get("instr_delta", 0)) > 20,
+    ])
+    if auto_named and only_internal_churn:
+        return round(min(raw_score, 1.5), 2)
+    return raw_score
+
+
 def analyze_diff(features_a: dict, features_b: dict, match_data: dict) -> dict:
     """Analyze all matched functions and produce ranked change data."""
     # Build lookup by entry address
@@ -233,7 +255,7 @@ def analyze_diff(features_a: dict, features_b: dict, match_data: dict) -> dict:
             map_a_to_b=map_a_to_b,
             map_b_to_a=map_b_to_a,
         )
-        interest = compute_interestingness(signals)
+        interest = _adjust_interestingness(compute_interestingness(signals), fa, fb, signals)
 
         analyzed.append({
             "name_a": m["name_a"],

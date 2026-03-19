@@ -137,6 +137,30 @@ def test_validation_style_growth_can_be_security_possible():
     assert result["triage_label"] in ("security_fix_possible", "security_fix_likely")
 
 
+def test_synthetic_light_backend_scope_uses_behavior_label():
+    func_diff = {
+        "name_a": "section:__TEXT:__text",
+        "name_b": "section:__TEXT:__text",
+        "interestingness": 1.2,
+        "signals": {
+            "ext_calls_added": [],
+            "ext_calls_removed": [],
+            "calls_added": [],
+            "calls_removed": [],
+            "strings_added": ["executable section"],
+            "strings_removed": [],
+            "constants_added": [],
+            "size_delta_pct": 0.1,
+            "blocks_delta": 0,
+            "instr_delta": 0,
+            "compare_delta": 0,
+            "branch_delta": 0,
+        },
+    }
+    result = triage_function(func_diff)
+    assert result["triage_label"] == "behavior_change"
+
+
 def test_analyze_match_ignores_auto_internal_call_address_churn():
     func_a = {
         "called_functions": [

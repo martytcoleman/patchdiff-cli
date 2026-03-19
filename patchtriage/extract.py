@@ -7,6 +7,7 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 
+from .classify import classify_binary
 from .features import enrich_feature_set
 
 
@@ -47,7 +48,7 @@ def _load_cached_features(output_path: str, binary_path: str) -> dict | None:
     return None
 
 
-def _extract_features(program) -> dict:
+def _extract_features(program, *, profile: str = "full") -> dict:
     """Extract per-function features from a Ghidra FlatProgramAPI program."""
     from ghidra.program.model.block import BasicBlockModel
     from ghidra.util.task import ConsoleTaskMonitor
@@ -88,7 +89,7 @@ def _extract_features(program) -> dict:
             m = instr.getMnemonicString()
             mnemonic_hist[m] += 1
             instr_count += 1
-            if prev_mnemonic is not None:
+            if profile == "full" and prev_mnemonic is not None:
                 bigrams[prev_mnemonic + "," + m] += 1
             prev_mnemonic = m
             # collect scalar operand constants
@@ -129,6 +130,10 @@ def _extract_features(program) -> dict:
                     if len(s) >= 2 and s not in seen_strings:
                         seen_strings.add(s)
                         strings.append(s)
+                        if profile == "fast" and len(strings) >= 12:
+                            break
+            if profile == "fast" and len(strings) >= 12:
+                break
 
         # --- called functions ---
         called_funcs = []
@@ -142,9 +147,10 @@ def _extract_features(program) -> dict:
 
         # --- calling functions ---
         callers = []
-        caller_set = func.getCallingFunctions(monitor)
-        for cf in caller_set:
-            callers.append(cf.getName())
+        if profile == "full":
+            caller_set = func.getCallingFunctions(monitor)
+            for cf in caller_set:
+                callers.append(cf.getName())
 
         func_data = {
             "name": name,
@@ -170,7 +176,8 @@ def _extract_features(program) -> dict:
 
 
 def run_extract(binary_path: str, output_path: str, ghidra_path: str | None = None,
-                reuse_cached: bool = True) -> dict:
+                reuse_cached: bool = True,
+                profile: str = "auto") -> dict:
     """Run Ghidra via pyghidra to extract features from binary_path into output_path.
 
     Returns the parsed features dict.
@@ -187,6 +194,17 @@ def run_extract(binary_path: str, output_path: str, ghidra_path: str | None = No
         if cached is not None:
             print(f"Reusing cached features from {output_path}")
             return cached
+
+    classification = classify_binary(binary_path)
+    selected_profile = classification["recommended_profile"] if profile == "auto" else profile
+    print(
+        f"Pre-scan: format={classification['format']} language={classification['language']} "
+        f"size={classification['size_bytes'] / (1024 * 1024):.1f} MiB "
+        f"profile={selected_profile}",
+        flush=True,
+    )
+    if classification["reasons"]:
+        print(f"Reasons: {', '.join(classification['reasons'])}", flush=True)
 
     ghidra_install = ghidra_path or _find_ghidra_install()
     if not ghidra_install:
@@ -225,7 +243,7 @@ def run_extract(binary_path: str, output_path: str, ghidra_path: str | None = No
                 project_name=project_name,
             ) as flat_api:
                 program = flat_api.getCurrentProgram()
-                data = _extract_features(program)
+                data = _extract_features(program, profile=selected_profile)
         except KeyboardInterrupt:
             print("\nPatchTriage extraction interrupted by user.", file=sys.stderr)
             raise SystemExit(130)
@@ -239,6 +257,8 @@ def run_extract(binary_path: str, output_path: str, ghidra_path: str | None = No
             raise
 
     data["source_metadata"] = _binary_metadata(binary_path)
+    data["analysis_profile"] = selected_profile
+    data["classification"] = classification
     with open(output_path, "w") as f:
         json.dump(data, f, indent=2, default=str)
 

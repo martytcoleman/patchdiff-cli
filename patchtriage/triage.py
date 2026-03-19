@@ -172,6 +172,10 @@ def triage_function(func_diff: dict) -> dict:
         signals.get("branch_delta", 0),
         signals.get("compare_delta", 0),
     ])
+    synthetic_scope = any(
+        str(func_diff.get(key, "")).startswith(("section:", "imports:", "__binary__"))
+        for key in ("name_a", "name_b")
+    )
 
     # --- Determine label ---
     if sec_score >= 4.0:
@@ -188,6 +192,15 @@ def triage_function(func_diff: dict) -> dict:
     elif has_behavioral_signal and func_diff.get("interestingness", 0) >= 2.0:
         label = "behavior_change"
         rationale.append("Meaningful structural or call-flow change without direct security evidence")
+    elif synthetic_scope and has_behavioral_signal and func_diff.get("interestingness", 0) >= 1.0:
+        label = "behavior_change"
+        rationale.append("Coarse binary-region or import-surface change worth manual review")
+    elif synthetic_scope and abs_pct > 0:
+        label = "refactor"
+        rationale.append("Coarse binary-region size change without direct security evidence")
+    elif synthetic_scope and func_diff.get("interestingness", 0) >= 1.0:
+        label = "behavior_change"
+        rationale.append("Coarse binary-region change surfaced by fallback analysis")
     elif func_diff.get("interestingness", 0) < 2.0:
         label = "unchanged"
     else:

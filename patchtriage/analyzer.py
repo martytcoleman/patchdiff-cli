@@ -18,6 +18,11 @@ def _call_names(func: dict, external_only: bool = False) -> set[str]:
     return out
 
 
+def _set_change(a: list | set, b: list | set) -> tuple[list, list]:
+    sa, sb = set(a), set(b)
+    return sorted(sb - sa), sorted(sa - sb)
+
+
 def analyze_match(func_a: dict, func_b: dict) -> dict:
     """Compute change signals between a matched pair of functions."""
 
@@ -65,6 +70,19 @@ def analyze_match(func_a: dict, func_b: dict) -> dict:
     const_b = set(func_b.get("constants", []))
     signals["constants_added"] = sorted(const_b - const_a)
     signals["constants_removed"] = sorted(const_a - const_b)
+    signals["constant_buckets_added"], signals["constant_buckets_removed"] = _set_change(
+        func_a.get("constant_buckets", []),
+        func_b.get("constant_buckets", []),
+    )
+
+    signals["api_families_added"], signals["api_families_removed"] = _set_change(
+        func_a.get("api_families", []),
+        func_b.get("api_families", []),
+    )
+    signals["string_categories_added"], signals["string_categories_removed"] = _set_change(
+        func_a.get("string_categories", []),
+        func_b.get("string_categories", []),
+    )
 
     # Mnemonic histogram delta (compare/branch density)
     hist_a = func_a.get("mnemonic_hist", {})
@@ -123,6 +141,8 @@ def compute_interestingness(signals: dict) -> float:
 
     # New constants
     score += len(signals.get("constants_added", [])) * 0.3
+    score += len(signals.get("api_families_added", [])) * 1.0
+    score += len(signals.get("string_categories_added", [])) * 0.8
 
     return round(score, 2)
 

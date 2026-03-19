@@ -123,10 +123,11 @@ def bar(value: float, max_val: float, width: int = 20) -> str:
 def print_report(diff_data: dict, top_n: int = 30):
     """Print colorized report to terminal."""
 
-    header("PatchTriage Diff Report")
+    header("PatchTriage Security Patch Triage Report")
     print()
     kv("Binary A", _c(CYAN, diff_data.get("binary_a", "N/A")), indent=0)
     kv("Binary B", _c(CYAN, diff_data.get("binary_b", "N/A")), indent=0)
+    kv("Question", "Which changed functions deserve immediate RE attention?", indent=0)
 
     total = diff_data.get("total_matches", 0)
     ua = len(diff_data.get("unmatched_a", []))
@@ -227,6 +228,12 @@ def print_report(diff_data: dict, top_n: int = 30):
         if str_removed:
             strs = [_c(RED, repr(s)) for s in str_removed[:5]]
             print(f"     {_c(RED, '- strings:')} {', '.join(strs)}")
+        api_added = signals.get("api_families_added", [])
+        if api_added:
+            print(f"     {_c(GREEN, '+ api families:')} {', '.join(_c(GREEN, c) for c in api_added)}")
+        cat_added = signals.get("string_categories_added", [])
+        if cat_added:
+            print(f"     {_c(GREEN, '+ string categories:')} {', '.join(_c(GREEN, c) for c in cat_added)}")
 
         # Separator
         print(f"  {_c(DIM, '─' * 70)}")

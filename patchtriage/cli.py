@@ -16,7 +16,8 @@ def _run_pipeline(binary_a: str, binary_b: str, *,
                   top: int = 30,
                   html: bool = False,
                   threshold: float = 0.3,
-                  ghidra: str | None = None):
+                  ghidra: str | None = None,
+                  stripped: bool = False):
     """Core pipeline: extract -> diff -> triage -> (llm) -> report."""
     from .extract import run_extract
     from .matcher import match_functions
@@ -47,7 +48,7 @@ def _run_pipeline(binary_a: str, binary_b: str, *,
     # ── Step 2: Match + Analyze ──
     print(f"\nMatching {_c(BOLD, str(feat_a['num_functions']))} vs "
           f"{_c(BOLD, str(feat_b['num_functions']))} functions...")
-    match_data = match_functions(feat_a, feat_b, threshold=threshold)
+    match_data = match_functions(feat_a, feat_b, threshold=threshold, stripped=stripped)
     print(f"  {_c(GREEN, str(match_data['num_matches']))} matched, "
           f"{_c(RED, str(match_data['num_unmatched_a']))} unmatched in A, "
           f"{_c(RED, str(match_data['num_unmatched_b']))} unmatched in B")
@@ -111,6 +112,7 @@ def cmd_run(args):
         html=args.html,
         threshold=args.threshold,
         ghidra=args.ghidra,
+        stripped=args.stripped,
     )
 
 
@@ -159,6 +161,27 @@ def cmd_report(args):
     print(f"{_c(DIM, 'Data written to')} {_c(CYAN, json_path)}")
 
 
+def cmd_evaluate(args):
+    """Evaluate fixture corpus for matching and ranking quality."""
+    from .console import _c, BOLD, CYAN, DIM
+    from .evaluate import evaluate_corpus, load_corpus
+
+    corpus = load_corpus(args.corpus_json)
+    result = evaluate_corpus(corpus)
+
+    print(_c(BOLD, "PatchTriage Evaluation"))
+    print(f"{_c(DIM, 'Corpus:')} {_c(CYAN, args.corpus_json)}")
+    print(f"{_c(DIM, 'Cases:')} {result['summary']['cases']}")
+    print(f"{_c(DIM, 'Match recall:')} {result['summary']['match_recall']}")
+    print(f"{_c(DIM, 'Top-3 security hit rate:')} {result['summary']['top3_security_hit_rate']}")
+
+    for case in result["cases"]:
+        print(
+            f"  {case['name']}: recall={case['match_recall']} "
+            f"precision={case['match_precision']} top3_hit={case['top3_security_hit']}"
+        )
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="patchtriage",
@@ -182,6 +205,8 @@ def main():
     p_run.add_argument("-t", "--threshold", type=float, default=0.3,
                         help="Similarity threshold for matching (default: 0.3)")
     p_run.add_argument("--ghidra", default=None, help="Path to Ghidra install directory")
+    p_run.add_argument("--stripped", action="store_true",
+                        help="Ignore function names during matching; use structural/contextual signals only")
     p_run.set_defaults(func=cmd_run)
 
     # --- report (from pre-computed diff.json) ---
@@ -196,6 +221,10 @@ def main():
                         help="LLM provider (auto-detected from .env if not set)")
     p_rep.add_argument("--api-key", default=None, help="API key (or set in .env)")
     p_rep.set_defaults(func=cmd_report)
+
+    p_eval = sub.add_parser("evaluate", help="Evaluate fixture corpus for matching and triage quality")
+    p_eval.add_argument("corpus_json", help="Path to evaluation corpus JSON")
+    p_eval.set_defaults(func=cmd_evaluate)
 
     args = parser.parse_args()
     args.func(args)

@@ -1,6 +1,10 @@
-# PatchTriage — Binary Patch Diffing & Triage CLI
+# PatchTriage — Binary Security Patch Triage CLI
 
-A command-line tool for diffing two versions of a binary, matching functions across versions, ranking the most important changes, and triaging patches with security-focused heuristics. Optional LLM-powered explanations provide natural-language summaries.
+A command-line tool for triaging binary patches to answer one question quickly:
+
+> After a patch lands, which changed functions deserve immediate reverse-engineering attention?
+
+PatchTriage compares two versions of a binary, matches functions across versions, ranks the most important changes, and highlights likely security fixes with evidence-backed heuristics. Optional LLM summaries are available, but they are secondary to the extracted evidence and ranking.
 
 ## Architecture Overview
 
@@ -15,9 +19,10 @@ Binary B ──> [Ghidra Headless] ──> features_B.json ─┘
 | Stage | Command | Description |
 |-------|---------|-------------|
 | **Extract** | `patchtriage extract` | Runs Ghidra headless analysis to extract per-function features (mnemonic histograms, strings, imports, constants, CFG metrics) into JSON |
-| **Diff** | `patchtriage diff` | Matches functions across versions using multi-signal similarity scoring, then computes change signals for each matched pair |
+| **Diff** | internal pipeline | Matches functions across versions using multi-signal similarity scoring with optional stripped-mode matching, then computes change signals for each matched pair |
 | **Report** | `patchtriage report` | Applies triage heuristics to flag security-relevant changes and generates a ranked Markdown report |
-| **Explain** | `patchtriage explain` | (Optional) Adds LLM-generated summaries for the top changed functions |
+| **Evaluate** | `patchtriage evaluate` | Runs a small fixture corpus and reports matching / ranking quality |
+| **Explain** | optional | Adds LLM-generated summaries for the top changed functions |
 
 ## Requirements
 
@@ -68,17 +73,23 @@ patchtriage diff features_v1.json features_v2.json -o diff.json
 
    | Signal | Weight | Method |
    |--------|--------|--------|
-   | String references | 0.20 | Jaccard similarity |
-   | External calls | 0.15 | Jaccard similarity |
-   | All calls | 0.15 | Jaccard similarity |
-   | Mnemonic histogram | 0.20 | Cosine similarity |
-   | Mnemonic bigrams | 0.10 | Jaccard on bigram sets |
-   | Size ratio | 0.10 | min/max penalty |
-   | Block count ratio | 0.10 | min/max penalty |
+   | Normalized strings | 0.12 | Jaccard similarity |
+   | String categories | 0.08 | Jaccard similarity |
+   | External calls | 0.10 | Jaccard similarity |
+   | All calls | 0.08 | Jaccard similarity |
+   | Mnemonic histogram | 0.14 | Cosine similarity |
+   | Instruction groups | 0.08 | Cosine similarity |
+   | Mnemonic bigrams | 0.05 | Jaccard on bigram sets |
+   | API families | 0.06 | Jaccard similarity |
+   | Constant buckets | 0.04 | Jaccard similarity |
+   | Callgraph context | 0.05 | Ratio similarity |
+   | Size / blocks | 0.05 | min/max penalty |
 
-3. **Blocking:** Only functions within 3x size ratio are compared (reduces O(n^2) cost).
+3. **Blocking:** Only functions within 3x size ratio are compared, with extra blocking from API-family overlap where available.
 
-4. **Assignment:** Greedy highest-score-first with conflict resolution. Matches where the top-2 candidates are within 0.05 score are flagged as "uncertain."
+4. **Assignment:** Candidate matches are solved with bipartite assignment rather than a greedy pass. Matches where the top alternatives are within 0.05 score are flagged as "uncertain."
+
+5. **Stripped mode:** `patchtriage run --stripped ...` ignores function names entirely and relies on structural and contextual signals.
 
 **Change analysis** then computes per-match:
 - Size/block/instruction deltas
@@ -125,7 +136,7 @@ patchtriage explain diff.json --provider grok --top 10
 patchtriage explain diff.json --provider openai --top 10
 ```
 
-This is what makes PatchTriage stand out from BinDiff/Diaphora. The LLM receives **structured evidence only** (no raw disassembly) and produces:
+LLM support is optional. The core deliverable is the evidence-backed triage output. When enabled, the LLM receives **structured evidence only** (no raw disassembly) and produces:
 
 **Per-function analysis:**
 - 2-4 sentence natural-language summary of what changed and why it matters
@@ -165,6 +176,27 @@ This is what makes PatchTriage stand out from BinDiff/Diaphora. The LLM receives
 | `diff_report.html` | HTML version of the report |
 | `diff_explained.md` | Full report with LLM analysis, CWE classifications, and executive summary |
 | `diff_explained.json` | Enriched JSON with all LLM fields for programmatic use |
+
+## Evaluation
+
+PatchTriage includes a small fixture-driven evaluation path so changes can be tested without running Ghidra:
+
+```bash
+patchtriage evaluate examples/example_corpus.json
+pytest -q
+```
+
+Suggested evaluation modes:
+
+- symbol-preserved binaries
+- stripped binaries
+- recompiled binaries with different optimization settings
+
+Suggested metrics:
+
+- function match precision / recall
+- top-k hit rate for known security-relevant functions
+- analyst triage reduction: how many functions need review versus total changed
 
 ## JSON Schemas
 

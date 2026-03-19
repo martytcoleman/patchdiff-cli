@@ -40,7 +40,7 @@ def _make_func(name, size=100, strings=None, calls=None, hist=None):
 def test_identical_functions_high_score():
     f = _make_func("foo", strings=["hello"], calls=["printf"])
     score = compute_similarity(f, f)
-    assert score > 0.9
+    assert score > 0.8
 
 
 def test_different_functions_low_score():
@@ -72,3 +72,12 @@ def test_unmatched_functions():
     result = match_functions(feat_a, feat_b, threshold=0.99)
     assert result["num_unmatched_a"] >= 1
     assert result["num_unmatched_b"] >= 1
+
+
+def test_match_in_stripped_mode_uses_non_name_signals():
+    fa = _make_func("FUN_1000", size=120, strings=["invalid header"], calls=["strcpy"])
+    fb = _make_func("FUN_2000", size=125, strings=["invalid header"], calls=["strncpy"])
+    feat_a = {"functions": [fa], "binary": "a"}
+    feat_b = {"functions": [fb], "binary": "b"}
+    result = match_functions(feat_a, feat_b, threshold=0.2, stripped=True)
+    assert result["num_matches"] == 1

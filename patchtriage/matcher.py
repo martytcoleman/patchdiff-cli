@@ -1,9 +1,12 @@
 """Function matching between two feature sets."""
 
-import json
 import math
-from collections import Counter
 from dataclasses import dataclass, field
+
+from scipy.optimize import linear_sum_assignment
+
+from .features import enrich_feature_set
+from .normalize import normalize_symbol
 
 
 @dataclass
@@ -55,12 +58,33 @@ def _get_call_names(func: dict, external_only: bool = False) -> set[str]:
     return names
 
 
-def compute_similarity(fa: dict, fb: dict) -> float:
+def _name_similarity(fa: dict, fb: dict, stripped: bool) -> float:
+    if stripped:
+        return 0.0
+    na = normalize_symbol(fa.get("name", ""))
+    nb = normalize_symbol(fb.get("name", ""))
+    if not na or not nb or na.startswith("fun_") or nb.startswith("fun_"):
+        return 0.0
+    return 1.0 if na == nb else 0.0
+
+
+def _ratio_sim(a: int, b: int) -> float:
+    if a == 0 and b == 0:
+        return 1.0
+    if max(a, b) == 0:
+        return 0.0
+    return min(a, b) / max(a, b)
+
+
+def compute_similarity(fa: dict, fb: dict, *, stripped: bool = False) -> float:
     """Compute weighted similarity score between two function feature dicts."""
+    name_sim = _name_similarity(fa, fb, stripped)
+
     # String similarity
-    strings_a = set(fa.get("strings", []))
-    strings_b = set(fb.get("strings", []))
+    strings_a = set(fa.get("normalized_strings", fa.get("strings", [])))
+    strings_b = set(fb.get("normalized_strings", fb.get("strings", [])))
     str_sim = _jaccard(strings_a, strings_b)
+    str_cat_sim = _jaccard(set(fa.get("string_categories", [])), set(fb.get("string_categories", [])))
 
     # Import/call similarity
     calls_a = _get_call_names(fa)
@@ -74,6 +98,7 @@ def compute_similarity(fa: dict, fb: dict) -> float:
 
     # Mnemonic histogram cosine
     mnem_sim = _cosine_hist(fa.get("mnemonic_hist", {}), fb.get("mnemonic_hist", {}))
+    group_sim = _cosine_hist(fa.get("instruction_groups", {}), fb.get("instruction_groups", {}))
 
     # Mnemonic bigram Jaccard
     bg_a = set(fa.get("mnemonic_bigrams", {}).keys())
@@ -87,22 +112,40 @@ def compute_similarity(fa: dict, fb: dict) -> float:
     ba, bb = fa.get("block_count", 1), fb.get("block_count", 1)
     block_sim = _size_penalty(ba, bb)
 
+    api_family_sim = _jaccard(set(fa.get("api_families", [])), set(fb.get("api_families", [])))
+    const_bucket_sim = _jaccard(set(fa.get("constant_buckets", [])), set(fb.get("constant_buckets", [])))
+
+    ctx_a = fa.get("callgraph_context", {})
+    ctx_b = fb.get("callgraph_context", {})
+    ctx_sim = (
+        _ratio_sim(ctx_a.get("caller_count", 0), ctx_b.get("caller_count", 0))
+        + _ratio_sim(ctx_a.get("callee_count", 0), ctx_b.get("callee_count", 0))
+        + _ratio_sim(ctx_a.get("external_callee_count", 0), ctx_b.get("external_callee_count", 0))
+    ) / 3.0
+
     # Weighted combination
     score = (
-        0.20 * str_sim
-        + 0.15 * ext_sim
-        + 0.15 * call_sim
-        + 0.20 * mnem_sim
-        + 0.10 * bigram_sim
-        + 0.10 * size_pen
-        + 0.10 * block_sim
+        0.15 * name_sim
+        + 0.12 * str_sim
+        + 0.08 * str_cat_sim
+        + 0.10 * ext_sim
+        + 0.08 * call_sim
+        + 0.14 * mnem_sim
+        + 0.08 * group_sim
+        + 0.05 * bigram_sim
+        + 0.06 * api_family_sim
+        + 0.04 * const_bucket_sim
+        + 0.05 * ctx_sim
+        + 0.025 * size_pen
+        + 0.025 * block_sim
     )
     return score
 
 
 def match_functions(features_a: dict, features_b: dict,
                     threshold: float = 0.3,
-                    uncertain_gap: float = 0.05) -> dict:
+                    uncertain_gap: float = 0.05,
+                    stripped: bool = False) -> dict:
     """Match functions between two binaries.
 
     Returns a dict with:
@@ -110,6 +153,8 @@ def match_functions(features_a: dict, features_b: dict,
       - unmatched_a: functions only in A
       - unmatched_b: functions only in B
     """
+    features_a = enrich_feature_set(features_a)
+    features_b = enrich_feature_set(features_b)
     funcs_a = features_a["functions"]
     funcs_b = features_b["functions"]
 
@@ -122,24 +167,25 @@ def match_functions(features_a: dict, features_b: dict,
     used_a: set[int] = set()
     used_b: set[int] = set()
 
-    # --- Pass 1: exact name match (non-default names) ---
-    for i, fa in enumerate(funcs_a):
-        name = fa["name"]
-        if name.startswith("FUN_") or name.startswith("thunk_FUN_"):
-            continue  # auto-generated name, skip
-        if name in name_idx_b:
-            candidates = name_idx_b[name]
-            if len(candidates) == 1:
-                j = candidates[0]
-                if j not in used_b:
-                    score = compute_similarity(fa, funcs_b[j])
-                    matches.append(MatchResult(
-                        name_a=fa["name"], name_b=funcs_b[j]["name"],
-                        entry_a=fa["entry"], entry_b=funcs_b[j]["entry"],
-                        score=score, method="name_exact",
-                    ))
-                    used_a.add(i)
-                    used_b.add(j)
+    if not stripped:
+        # --- Pass 1: exact name match (non-default names) ---
+        for i, fa in enumerate(funcs_a):
+            name = fa["name"]
+            if name.startswith("FUN_") or name.startswith("thunk_FUN_"):
+                continue
+            if name in name_idx_b:
+                candidates = name_idx_b[name]
+                if len(candidates) == 1:
+                    j = candidates[0]
+                    if j not in used_b:
+                        score = compute_similarity(fa, funcs_b[j], stripped=stripped)
+                        matches.append(MatchResult(
+                            name_a=fa["name"], name_b=funcs_b[j]["name"],
+                            entry_a=fa["entry"], entry_b=funcs_b[j]["entry"],
+                            score=score, method="name_exact",
+                        ))
+                        used_a.add(i)
+                        used_b.add(j)
 
     # --- Pass 2: similarity-based matching for remaining functions ---
     remaining_a = [(i, f) for i, f in enumerate(funcs_a) if i not in used_a]
@@ -155,34 +201,51 @@ def match_functions(features_a: dict, features_b: dict,
                 ratio = min(sa, sb) / max(sa, sb)
                 if ratio < 0.33:
                     continue
-            score = compute_similarity(fa, fb)
+            if fa.get("api_families") and fb.get("api_families"):
+                if not (set(fa.get("api_families", [])) & set(fb.get("api_families", []))):
+                    if ratio < 0.5:
+                        continue
+            score = compute_similarity(fa, fb, stripped=stripped)
             if score >= threshold:
                 scored_pairs.append((score, i, j))
 
-    # Greedy assignment: highest score first
-    scored_pairs.sort(reverse=True)
-    for score, i, j in scored_pairs:
-        if i in used_a or j in used_b:
-            continue
-        # Check uncertainty: is the second-best close?
-        uncertain = False
-        for score2, i2, j2 in scored_pairs:
-            if score2 >= score:
-                continue
-            if (i2 == i and j2 != j) or (j2 == j and i2 != i):
-                if score - score2 < uncertain_gap:
-                    uncertain = True
-                break
+    if scored_pairs:
+        row_index = {i: idx for idx, (i, _) in enumerate(remaining_a)}
+        col_index = {j: idx for idx, (j, _) in enumerate(remaining_b)}
+        score_matrix = [[0.0 for _ in remaining_b] for _ in remaining_a]
+        for score, i, j in scored_pairs:
+            score_matrix[row_index[i]][col_index[j]] = score
 
-        matches.append(MatchResult(
-            name_a=funcs_a[i]["name"], name_b=funcs_b[j]["name"],
-            entry_a=funcs_a[i]["entry"], entry_b=funcs_b[j]["entry"],
-            score=score,
-            method="similarity",
-            uncertain=uncertain,
-        ))
-        used_a.add(i)
-        used_b.add(j)
+        rows, cols = linear_sum_assignment([[-score for score in row] for row in score_matrix])
+        for row, col in zip(rows, cols):
+            score = score_matrix[row][col]
+            if score < threshold:
+                continue
+            i = remaining_a[row][0]
+            j = remaining_b[col][0]
+            if i in used_a or j in used_b:
+                continue
+
+            alternatives_i = sorted(
+                (s for s, ii, jj in scored_pairs if ii == i and jj != j),
+                reverse=True,
+            )
+            alternatives_j = sorted(
+                (s for s, ii, jj in scored_pairs if jj == j and ii != i),
+                reverse=True,
+            )
+            second_best = max(alternatives_i[:1] + alternatives_j[:1], default=0.0)
+            uncertain = bool(second_best and score - second_best < uncertain_gap)
+
+            matches.append(MatchResult(
+                name_a=funcs_a[i]["name"], name_b=funcs_b[j]["name"],
+                entry_a=funcs_a[i]["entry"], entry_b=funcs_b[j]["entry"],
+                score=score,
+                method="similarity_bipartite",
+                uncertain=uncertain,
+            ))
+            used_a.add(i)
+            used_b.add(j)
 
     unmatched_a = [funcs_a[i]["name"] for i in range(len(funcs_a)) if i not in used_a]
     unmatched_b = [funcs_b[j]["name"] for j in range(len(funcs_b)) if j not in used_b]

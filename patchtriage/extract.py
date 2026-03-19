@@ -6,6 +6,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from .features import enrich_feature_set
+
 
 def _find_ghidra_install() -> str:
     """Locate Ghidra install directory."""
@@ -122,12 +124,12 @@ def _extract_features(program) -> dict:
         }
         functions_out.append(func_data)
 
-    return {
+    return enrich_feature_set({
         "binary": str(program.getExecutablePath()),
         "arch": str(program.getLanguage().getProcessor()),
         "num_functions": len(functions_out),
         "functions": functions_out,
-    }
+    })
 
 
 def run_extract(binary_path: str, output_path: str, ghidra_path: str | None = None) -> dict:

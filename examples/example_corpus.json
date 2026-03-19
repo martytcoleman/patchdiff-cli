@@ -1,0 +1,78 @@
+{
+  "cases": [
+    {
+      "name": "patched_http_parser",
+      "stripped": true,
+      "features_a": {
+        "binary": "server_v1",
+        "functions": [
+          {
+            "name": "FUN_1000",
+            "entry": "0x1000",
+            "size": 120,
+            "instr_count": 60,
+            "block_count": 12,
+            "mnemonic_hist": {"mov": 10, "call": 3, "cmp": 2, "je": 1},
+            "mnemonic_bigrams": {"cmp,je": 1},
+            "strings": ["bad request"],
+            "constants": [64],
+            "called_functions": [{"name": "strcpy", "is_external": true}],
+            "callers": ["main"]
+          },
+          {
+            "name": "FUN_2000",
+            "entry": "0x2000",
+            "size": 80,
+            "instr_count": 40,
+            "block_count": 8,
+            "mnemonic_hist": {"mov": 8, "call": 2, "cmp": 1, "je": 1},
+            "mnemonic_bigrams": {"cmp,je": 1},
+            "strings": ["ok"],
+            "constants": [64],
+            "called_functions": [{"name": "write", "is_external": true}],
+            "callers": ["main"]
+          }
+        ]
+      },
+      "features_b": {
+        "binary": "server_v2",
+        "functions": [
+          {
+            "name": "FUN_3000",
+            "entry": "0x3000",
+            "size": 150,
+            "instr_count": 75,
+            "block_count": 15,
+            "mnemonic_hist": {"mov": 12, "call": 4, "cmp": 3, "je": 2},
+            "mnemonic_bigrams": {"cmp,je": 2},
+            "strings": ["invalid header", "bad request"],
+            "constants": [64],
+            "called_functions": [
+              {"name": "strncpy", "is_external": true},
+              {"name": "validate_header", "is_external": false}
+            ],
+            "callers": ["main"]
+          },
+          {
+            "name": "FUN_4000",
+            "entry": "0x4000",
+            "size": 82,
+            "instr_count": 41,
+            "block_count": 8,
+            "mnemonic_hist": {"mov": 8, "call": 2, "cmp": 1, "je": 1},
+            "mnemonic_bigrams": {"cmp,je": 1},
+            "strings": ["ok"],
+            "constants": [64],
+            "called_functions": [{"name": "write", "is_external": true}],
+            "callers": ["main"]
+          }
+        ]
+      },
+      "expected_matches": [
+        ["FUN_1000", "FUN_3000"],
+        ["FUN_2000", "FUN_4000"]
+      ],
+      "security_targets": ["FUN_1000", "FUN_3000"]
+    }
+  ]
+}

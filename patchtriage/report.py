@@ -32,11 +32,12 @@ def _severity_badge(severity: str | None) -> str:
 def generate_markdown(diff_data: dict, top_n: int = 30) -> str:
     """Generate a Markdown report from triaged diff data."""
     lines: list[str] = []
-    lines.append("# PatchTriage Diff Report")
+    lines.append("# PatchTriage Security Patch Triage Report")
     lines.append("")
     lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     lines.append(f"**Binary A:** `{diff_data.get('binary_a', 'N/A')}`")
     lines.append(f"**Binary B:** `{diff_data.get('binary_b', 'N/A')}`")
+    lines.append("**Primary question:** Which changed functions deserve immediate reverse-engineering attention?")
     lines.append("")
 
     # Executive summary (LLM-generated, if present)
@@ -131,6 +132,10 @@ def generate_markdown(diff_data: dict, top_n: int = 30) -> str:
             lines.append(f"  Strings added: {signals['strings_added'][:10]}")
         if signals.get("strings_removed"):
             lines.append(f"  Strings removed: {signals['strings_removed'][:10]}")
+        if signals.get("api_families_added"):
+            lines.append(f"  API families added: {signals['api_families_added']}")
+        if signals.get("string_categories_added"):
+            lines.append(f"  String categories added: {signals['string_categories_added']}")
         lines.append("")
         lines.append("---")
         lines.append("")

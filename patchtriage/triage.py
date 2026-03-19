@@ -58,6 +58,8 @@ def triage_function(func_diff: dict) -> dict:
     strings_added = signals.get("strings_added", [])
     strings_removed = signals.get("strings_removed", [])
     consts_added = set(signals.get("constants_added", []))
+    api_families_added = set(signals.get("api_families_added", []))
+    string_categories_added = set(signals.get("string_categories_added", []))
 
     # Build normalized lookup for symbol matching across platforms
     norm_added = _normalize_set(ext_added | calls_added)
@@ -101,6 +103,16 @@ def triage_function(func_diff: dict) -> dict:
     if error_strings:
         rationale.append(f"Added error/validation string(s): {error_strings[:5]}")
         sec_score += 1.5 * min(len(error_strings), 3)
+
+    if "validation" in api_families_added:
+        rationale.append("Added calls in validation-oriented API family")
+        sec_score += 1.0
+
+    if {"error", "bounds"} & string_categories_added:
+        rationale.append(
+            f"New string categories suggest validation/bounds handling: {sorted({'error', 'bounds'} & string_categories_added)}"
+        )
+        sec_score += 1.0
 
     # --- Heuristic 5: new error-return paths (block growth + compare growth) ---
     if (signals.get("blocks_delta", 0) > 2

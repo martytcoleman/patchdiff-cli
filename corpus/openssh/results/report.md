@@ -1,6 +1,6 @@
 # PatchTriage Security Patch Triage Report
 
-**Generated:** 2026-03-19 16:37:52
+**Generated:** 2026-03-20 10:27:27
 **Binary A:** `/Users/marty/patchdiff-cli/corpus/openssh/sshd-9.7p1-darwin-arm64`
 **Binary B:** `/Users/marty/patchdiff-cli/corpus/openssh/sshd-9.8p1-darwin-arm64`
 **Primary question:** Which changed functions deserve immediate reverse-engineering attention?

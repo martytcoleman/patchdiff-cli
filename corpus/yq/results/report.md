@@ -1,6 +1,6 @@
 # PatchTriage Security Patch Triage Report
 
-**Generated:** 2026-03-19 16:38:11
+**Generated:** 2026-03-20 10:27:37
 **Binary A:** `/Users/marty/patchdiff-cli/corpus/yq/yq-v4.48.2-darwin-arm64`
 **Binary B:** `/Users/marty/patchdiff-cli/corpus/yq/yq-v4.49.1-darwin-arm64`
 **Primary question:** Which changed functions deserve immediate reverse-engineering attention?

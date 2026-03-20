@@ -1,6 +1,6 @@
 # PatchTriage Security Patch Triage Report
 
-**Generated:** 2026-03-19 16:38:04
+**Generated:** 2026-03-20 10:27:30
 **Binary A:** `/Users/marty/patchdiff-cli/corpus/zstd/zstd-1.5.5/programs/zstd`
 **Binary B:** `/Users/marty/patchdiff-cli/corpus/zstd/zstd-1.5.7/programs/zstd`
 **Primary question:** Which changed functions deserve immediate reverse-engineering attention?

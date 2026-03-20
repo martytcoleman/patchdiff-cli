@@ -12,7 +12,7 @@ PatchTriage is aimed at that triage step. The motivating question is simple: aft
 
 The implementation is a command-line tool that compares two versions of a binary, matches functions across versions, computes change signals, and produces a ranked review queue. Each function receives a triage label (`security_fix_likely`, `security_fix_possible`, `behavior_change`, `refactor`, or `unchanged`) along with rationale based on the extracted signals.
 
-The main design decision in the final version was to treat binary analysis as an adaptive problem rather than assuming that one extraction strategy works for every target. Symbolized C/C++ binaries go through a fast native extraction path. Harder binaries — especially large Go or Rust executables — fall back to a lightweight path that still produce a coarse but useful triage instead of failing outright. Stripped binaries can go through Ghidra for richer structural recovery.
+The main design decision in the final version was to treat binary analysis as an adaptive problem rather than assuming that one extraction strategy works for every target. Symbolized C/C++ binaries go through a fast native extraction path. Harder binaries — especially large Go or Rust executables — fall back to a lightweight path that still produces a coarse but useful triage instead of failing outright. Stripped binaries can go through Ghidra for richer structural recovery.
 
 ## 2. Problem statement and related work
 
@@ -108,9 +108,9 @@ Pass 2 — Similarity-based bipartite assignment. Remaining functions are compar
 
 Candidate pairs are filtered by a 3x size ratio blocking step, then solved with bipartite assignment (scipy's `linear_sum_assignment`) rather than a greedy pass. Matches where the top alternatives are within 0.05 of the winning score are flagged as "uncertain."
 
-**Cross-name similarity floor (symbolized builds only).** For Pass 2, if both functions have real symbol names (not `FUN_<addr>`) and the names are **not** plausible renames of each other (same helper as Pass 1.5), an edge must meet **at least 0.52** similarity in addition to the user threshold. That blocks many absurd pairings between unrelated APIs that only cleared the default 0.30 bar on coincidentally similar tiny wrappers.
+In symbolized builds, I also added a cross-name similarity floor during Pass 2. If both sides have real symbol names and those names are not plausible renames, the pair must meet a higher similarity threshold (0.52) in order to be considered. This blocks many implausible pairings between unrelated APIs that would otherwise clear the default threshold due to superficial similarity in small wrappers.
 
-Pass 2.5 — **Exact-name repair (post-assignment).** Global bipartite matching can assign an A-side row to an unrelated B-side function while a different B row with the **same** symbol name remains unmatched (e.g. duplicate symbols, size blocking so the true same-name pair never entered the candidate set). After assignment, a short repair pass re-points those mismatched pairs to the lone unmatched B function whose name equals `name_a`, when that situation is unambiguous. This removed inconsistent OpenSSL rows such as `_ossl_sleep` paired with `_kmac_update` while `_ossl_sleep` also appeared under "New in B."
+After bipartite assignment, I apply a short repair pass for a specific case: global assignment can sometimes pair a function in A with an unrelated function in B even while a same-named function in B remains unmatched. When that situation is unambiguous, the matcher re-points the pair to the unmatched same-name symbol. This fixed several inconsistent OpenSSL rows in which a symbol was simultaneously mismatched and listed as new in B.
 
 For stripped binaries, I also had to normalize away a major source of noise: auto-generated names like `FUN_<addr>`. Earlier versions overcounted internal call churn simply because addresses changed between builds. The final analyzer canonicalizes internal calls through matched entries where possible, which made a significant difference in false positive rates.
 
@@ -200,7 +200,7 @@ I evaluated the tool across seven corpus targets spanning different binary forma
 
 | Target | Backend | Matched | SEC-LIKELY | SEC-POSSIBLE | Known CVEs Found |
 |--------|---------|---------|------------|--------------|-----------------|
-| OpenSSL 3.0.13→14 | native | 12,028 | 1 | 1 | 3/3 |
+| OpenSSL 3.0.13→14 | native | 12,028 | 2 | 1 | 3/3 |
 | OpenSSH 9.7→9.8 | native | 681 | 3 | 3 | 1/1 (+ structural) |
 | SQLite 3.51.2→3 | ghidra | 2,356 | 2 | 0 | corruption detection |
 | zstd 1.5.5→7 | native | 1,132 | 0 | 3 | stack hardening |
@@ -212,15 +212,15 @@ I evaluated the tool across seven corpus targets spanning different binary forma
 
 OpenSSL **3.0.14** was released **4 June 2024** with fixes for **three** CVEs, as summarized in the [OpenSSL 3.0 series release notes](https://www.openssl.org/news/openssl-3.0-notes.html) (and `CHANGES.md` in the source tree). This is the clearest evaluation case because those advisories are explicit and the patch is contained in one library pair.
 
-Top security findings (representative run, `corpus/openssl/demo`):
+Top security findings:
 
 | Rank | Function | Label | Key Signal |
 |------|----------|-------|------------|
-| #1 | `_ossl_dsa_check_pairwise` | SEC-POSSIBLE | New guard logic, +81.8% |
-| #2 | `_EVP_Update_loop` | SEC-LIKELY | Stack protection added, +24.4% |
-| #3 | `_ossl_sm2_encrypt` | BEHAVIOR | Large structural change (not CVE-tagged) |
+| #1 | `_EVP_PKEY_CTX_add1_hkdf_info` | SEC-LIKELY | Stack protection added, +1712.5% |
+| #2 | `_ossl_dsa_check_pairwise` | SEC-POSSIBLE | New guard logic, +81.8% |
+| #3 | `_EVP_Update_loop` | SEC-LIKELY | Stack protection added, bounds constant +24.4% |
 
-The tool also surfaces **12** new functions in B (unmatched), e.g. `_ssl_session_dup_intern`, `_dsa_precheck_params`, and `_EVP_PKEY_CTX_add1_hkdf_info`. **Mapping symbols to a specific CVE is inference from the diff** — the advisories usually describe APIs and behavior, not every mangled symbol. Some unmatched symbols are **collateral** changes in the same release rather than called out line-by-line in the security notice.
+The tool also surfaces **12** new functions in B (unmatched), e.g. `_ssl_session_dup_intern`, `_dsa_precheck_params`, and `_kdf_hkdf_gettable_ctx_params`. Mapping individual symbols to a specific CVE is necessarily an inference from the binary diff, since the advisories usually describe affected behavior or APIs rather than naming every changed internal symbol. Some unmatched symbols are collateral changes in the same release rather than called out line-by-line in the security notice.
 
 **CVE-2024-4741** — Official summary: *potential use-after-free after `SSL_free_buffers()` is called* (low severity; advisory notes this API is **rarely used**). This is **not** the same issue as TLSv1.3 session-cache growth (CVE-2024-2511). A binary-level report may show libssl/record-path churn without a literal `SSL_free_buffers` symbol jumping out of the ranking.
 
@@ -228,7 +228,7 @@ The tool also surfaces **12** new functions in B (unmatched), e.g. `_ssl_session
 
 **CVE-2024-2511** — Official summary: *unbounded memory growth with session handling in TLSv1.3*. Aligns with refactors around session duplication: `_ssl_session_dup_intern` as new in B and `_ssl_session_dup` often shrinking with “extract-and-harden” style rationale in the report.
 
-**Same release, not separate CVEs:** Strong signals on other symbols (e.g. `_EVP_Update_loop` with stack protection, or new KDF helpers such as `_EVP_PKEY_CTX_add1_hkdf_info`) can reflect **hardening shipped in 3.0.14** without being additional named CVEs in that advisory set—the published security fixes for this bump are the **three** CVEs above.
+**Same release, not separate CVEs:** Strong signals on other symbols (e.g. `_EVP_PKEY_CTX_add1_hkdf_info` with stack protection and +1712% growth at SEC-LIKELY #1, or `_EVP_Update_loop` with stack protection and bounds constants) can reflect **hardening shipped in 3.0.14** without being additional named CVEs in that advisory set—the published security fixes for this bump are the **three** CVEs above.
 
 Across this case study, the **themes** of all three advisories (buffers/session/DSA) show up somewhere in the ranked or unmatched output, which suggests the triage layer is useful for steering review—while **symbol-to-CVE attribution** should stay grounded in the official text.
 
@@ -359,7 +359,7 @@ yq is a 10MB Go binary. Standard `nm` returns 0 text symbols for Go binaries bec
 1. Go detection: checks for `__gopclntab` Mach-O section when byte-prefix markers fall outside the 2MB pre-scan window
 2. pclntab parsing: a full Go PC line table parser supporting Go 1.16+ format, which extracts 11,154 function names and sizes directly from the binary's embedded metadata
 
-This result is consistent with the release: this was a minor release with no security-relevant changes, and the tool reports 0 SEC-LIKELY and 0 SEC-POSSIBLE. Earlier versions of the tool showed only 23 "functions" — all section/import nodes — because they lacked Go-specific extraction.
+This result is consistent with the release: it was a minor update with no obvious security-relevant changes, and the tool reports 0 SEC-LIKELY and 0 SEC-POSSIBLE. Earlier versions of the tool showed only 23 "functions" — all section/import nodes — because they lacked Go-specific extraction.
 
 Reproduction:
 ```bash
@@ -377,7 +377,7 @@ Label precision on targets with known CVEs. For OpenSSL 3.0.14 (3 known CVEs) an
 
 | Target | Known CVE Functions | Appeared in Top 5 | Label Correct |
 |--------|--------------------|--------------------|---------------|
-| OpenSSL | §5.2: strong symbol alignment for **4603** (DSA) and **2511** (session dup); **4741** is `SSL_free_buffers` (often subtle in a symbol diff); other top hits may be same-release hardening, not extra CVEs | Yes (top ranks + unmatched B) | Mixed: 2/3 CVEs with clear symbols; third advisory reflected weakly or indirectly |
+| OpenSSL | Clear alignment for DSA-validation and session-duplication changes; weaker direct symbol-level alignment for `SSL_free_buffers` | Partial — top ranks plus unmatched B | 2/3 clearly aligned at symbol level; third reflected indirectly |
 | OpenSSH | `_server_accept_loop` (rearchitected), `_grace_alarm_handler` (removed) | #1 matched, removal correctly reported | 1/1 + structural evidence |
 
 There were no false positives in the SEC-LIKELY category across either target. SEC-POSSIBLE had a small number of non-CVE functions (stack hardening additions) that are arguably security-relevant even if they are not tied to a specific CVE.
@@ -385,9 +385,9 @@ There were no false positives in the SEC-LIKELY category across either target. S
 Baseline comparison: triage ranking vs. "sort by size delta." A naive baseline for patch triage is to sort functions by absolute size change percentage and review the largest changes first. I compared this against the tool's ranking for the OpenSSL target:
 
 - Size-delta baseline top 5: `_BN_generate_dsa_nonce` (-93.1%), `_EVP_PKEY_CTX_add1_hkdf_info` (+1712%), `_ossl_dsa_check_pairwise` (+81.8%), `_kdf_hkdf_derive` (+63.2%), `_dtls1_retransmit_buffered_messages` (+50.4%)
-- PatchTriage top 5 (after matcher repair): `_ossl_dsa_check_pairwise` (SEC-POSSIBLE), `_EVP_Update_loop` (SEC-LIKELY), `_ossl_sm2_encrypt` (BEHAVIOR), `_ENGINE_load_private_key` (REFACTOR), `_ossl_sm2_decrypt` (BEHAVIOR) — HKDF-related changes may rank lower or appear only as **new in B** (`_EVP_PKEY_CTX_add1_hkdf_info`), while stack/bounds signals still lift `_EVP_Update_loop` without a huge size delta.
+- PatchTriage top 5 (after matcher repair): `_EVP_PKEY_CTX_add1_hkdf_info` (SEC-LIKELY), `_ossl_dsa_check_pairwise` (SEC-POSSIBLE), `_EVP_Update_loop` (SEC-LIKELY), `_BN_generate_dsa_nonce` (BEHAVIOR), `_ossl_sm2_encrypt` (BEHAVIOR) — the HKDF helper now ranks #1 with stack protection and +1712% growth, while stack/bounds signals still lift `_EVP_Update_loop` without a huge size delta.
 
-The size-delta baseline captures some of the same functions but misses `_EVP_Update_loop` entirely — it only grew 24.4% in size, but it added stack protection, which is a clear security signal. More importantly, the baseline provides no rationale: it says "this function changed a lot" but not why. On the zstd target with 1,132 matched functions, the size-delta baseline puts codec optimization functions in the top 10, while the triage heuristics correctly demote those and surface the 3 functions with actual stack hardening.
+The size-delta baseline captures some of the same functions but misses `_EVP_Update_loop` entirely — it only grew 24.4% in size, but it added stack protection, which is a clear security signal. It does capture `_EVP_PKEY_CTX_add1_hkdf_info` (+1712%) but cannot explain *why* it matters (stack protection, not just growth). More importantly, the baseline provides no rationale: it says "this function changed a lot" but not why. On the zstd target with 1,132 matched functions, the size-delta baseline puts codec optimization functions in the top 10, while the triage heuristics correctly demote those and surface the 3 functions with actual stack hardening.
 
 The key contribution is the triage layer. Instead of leaving the analyst with a large flat diff, it attempts to prioritize the subset of changes that look most relevant to security review and to explain why they were prioritized.
 
@@ -477,7 +477,7 @@ The goal of this project was to help an analyst decide what to reverse first aft
 
 For the two targets with well-documented CVEs (OpenSSL 3.0.14 and OpenSSH 9.8), the top-ranked functions align with the known security fixes:
 
-- OpenSSL: CVE-2024-4603 and CVE-2024-2511 line up clearly with ranked/unmatched symbols; CVE-2024-4741 (`SSL_free_buffers`) is a smaller, API-specific fix and may not dominate the triage queue. No false positives in SEC-LIKELY on the evaluated run.
+- OpenSSL: CVE-2024-4603 and CVE-2024-2511 align clearly with ranked or unmatched symbols, while CVE-2024-4741 (`SSL_free_buffers`) is a smaller API-specific fix and appears more weakly at the symbol level. No false positives in SEC-LIKELY on the evaluated run.
 - OpenSSH: the CVE-2024-6387 fix components are ranked #1 (server_accept_loop rearchitecture), with corroborating evidence from 561 removed functions, 26 new functions, and signal handler shrinkage — and 100% match accuracy across 681 paired functions.
 
 The baseline comparison in section 5.8 shows that the triage ranking outperforms naive size-delta sorting and, more importantly, provides rationale that the analyst can use to verify or override the tool's judgment. That rationale is what makes the output actionable rather than just another ranked list.

@@ -1,6 +1,6 @@
 # PatchTriage Security Patch Triage Report
 
-**Generated:** 2026-03-19 16:38:01
+**Generated:** 2026-03-20 10:27:42
 **Binary A:** `/Users/marty/patchdiff-cli/corpus/openssl/openssl-3.0.13-darwin-arm64`
 **Binary B:** `/Users/marty/patchdiff-cli/corpus/openssl/openssl-3.0.14-darwin-arm64`
 **Primary question:** Which changed functions deserve immediate reverse-engineering attention?

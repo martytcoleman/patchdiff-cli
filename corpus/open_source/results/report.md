@@ -1,6 +1,6 @@
 # PatchTriage Security Patch Triage Report
 
-**Generated:** 2026-03-19 16:37:51
+**Generated:** 2026-03-20 12:50:38
 **Binary A:** `/Users/marty/patchdiff-cli/corpus/open_source/server_v1`
 **Binary B:** `/Users/marty/patchdiff-cli/corpus/open_source/server_v2`
 **Primary question:** Which changed functions deserve immediate reverse-engineering attention?

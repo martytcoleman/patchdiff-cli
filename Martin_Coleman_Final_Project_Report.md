@@ -509,8 +509,8 @@ See section 4 of this report and `README.md` in the repository for full installa
 
 - BinDiff — Google/Zynamics. Binary diffing tool for function-level correspondence. https://github.com/google/bindiff
 - Diaphora — Joxean Koret. Open-source binary diff tool (IDA Pro plugin). https://github.com/joxeankoret/diaphora
-- DarunGrim — Jeong Wook Oh. Patch analysis framework. https://github.com/nicehash/DarunGrim
-- TurboDiff — Nicolas Economou (Core Security). IDA Pro binary diffing plugin. https://www.coresecurity.com/core-labs/open-source-tools/turbodiff
+- DarunGrim — Jeong Wook Oh. Patch analysis framework. https://github.com/ohjeongwook/DarunGrim
+- TurboDiff — Nicolas Economou (Core Security). IDA Pro binary diffing plugin. https://github.com/nihilus/turbodiff
 - Ghidra — NSA. Software reverse engineering framework. https://ghidra-sre.org/
 
 ### Evaluation targets

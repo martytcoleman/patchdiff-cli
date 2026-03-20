@@ -30,7 +30,7 @@ def _load_env():
 # ── Prompt templates ──────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT = """\
-You are an expert binary patch analyst specializing in security vulnerability \
+You're an expert binary patch analyst specializing in security vulnerability \
 triage. You analyze structured evidence extracted from binary diffs — you never \
 see raw disassembly, only high-level signals (API changes, string changes, \
 control-flow deltas, etc.).

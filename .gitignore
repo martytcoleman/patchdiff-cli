@@ -9,6 +9,7 @@ build/
 *.rep
 *_ghidra/
 .pytest_cache/
+tmp/
 
 # Local corpus extraction/build artifacts
 corpus/**/.ghidra-settings/

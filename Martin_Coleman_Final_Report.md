@@ -1,6 +1,6 @@
 # PatchTriage: Adaptive Binary Patch Triage for Likely Security Fixes
 
-**Martin Coleman - Reverse Engineering Basics Final Project - March 19, 2026**
+**Martin Coleman - Reverse Engineering Basics Final Project - March 20, 2026**
 
 GitHub Repository URL: https://github.com/martytcoleman/patchtriage-cli
 
@@ -8,9 +8,9 @@ Demo Video: https://drive.google.com/file/d/1CR4U5G37NhrmVKooBy4Aw_cVsVQYJIw7/vi
 
 ## 1. Overview
 
-Binary diff tools such as BinDiff and Diaphora are good at telling an analyst which functions changed between two versions of a binary. In practice, though, that is often not the hardest part of patch analysis. Once a diff produces hundreds of changed functions, the real problem becomes deciding which ones are most worth inspecting first.
+Binary diff tools such as BinDiff and Diaphora are good at telling an analyst which functions changed between two versions of a binary. In practice, though, that's often not the hardest part of patch analysis. Once a diff produces hundreds of changed functions, the real problem becomes deciding which ones are most worth inspecting first.
 
-PatchTriage is aimed at that triage step. The motivating question is simple: after a patch lands, which changed functions should a reverse engineer inspect first? Rather than presenting a full diff for the analyst to explore manually, it attempts to rank the changed functions by how likely they are to matter for security review and to explain why each one was flagged.
+PatchTriage is aimed at that triage step. The question I wanted to answer was: after a patch lands, which changed functions should a reverse engineer inspect first? Rather than presenting a full diff for the analyst to explore manually, it attempts to rank the changed functions by how likely they are to matter for security review and to explain why each one was flagged.
 
 The implementation is a command-line tool that compares two versions of a binary, matches functions across versions, computes change signals, and produces a ranked review queue. Each function receives a triage label (`security_fix_likely`, `security_fix_possible`, `behavior_change`, `refactor`, or `unchanged`) along with rationale based on the extracted signals.
 
@@ -18,7 +18,7 @@ The main design decision in the final version was to treat binary analysis as an
 
 ## 2. Problem statement and related work
 
-Binary diffing tools are useful, but they tend to optimize for broad function correspondence rather than analyst triage. In practice, a patch analyst usually wants to answer a smaller question first: which parts of the update should be inspected before everything else?
+Binary diffing tools are useful, but they tend to optimize for broad function correspondence rather than analyst triage. In real environments, a patch analyst / reverse engineer usually wants to answer a smaller question first: which parts of the update should be inspected before everything else?
 
 That problem becomes harder when:
 
@@ -27,13 +27,13 @@ That problem becomes harder when:
 - language-specific runtime code dominates the binary
 - heavyweight analysis tools become slow or noisy
 
-I deliberately scoped the project around triage rather than full vulnerability discovery. The goal is to help an analyst decide what to inspect first, not to prove automatically that a vulnerability exists.
+I deliberately scoped the project around triage rather than full vulnerability discovery. I ultimately wanted to help an analyst decide what to inspect first instead of proving automatically that a vulnerability exists.
 
 ### Related work
 
 BinDiff (Google/Zynamics) is the standard for binary function matching. It uses a multi-pass algorithm (name matching, hash matching, call graph propagation) to produce a function correspondence. Diaphora (Joxean Koret) is an open-source IDA Pro plugin with a similar approach and some vulnerability-related heuristics of its own. Both tools are primarily designed around exhaustive diff exploration — the analyst browses the full correspondence and applies judgment to each entry. DarunGrim and TurboDiff are older tools in the same space.
 
-PatchTriage is aimed at a narrower problem. Where BinDiff and Diaphora optimize for correspondence exploration — giving the analyst a complete map of what changed — PatchTriage optimizes for analyst attention: which changes should be reviewed first, and why. The contribution is a combination of prioritization with per-function rationale and adaptive extraction that handles different binary types without manual configuration. The adaptive backend selection (Ghidra, native, light) came out of practical debugging — a single analysis path worked poorly across the full corpus, so I changed the design to choose different extraction strategies for different kinds of binaries.
+PatchTriage is aimed at a narrower problem. Where BinDiff and Diaphora optimize for correspondence exploration — giving the analyst a complete map of what changed — PatchTriage optimizes for analyst attention: which changes should be reviewed first, and why. Its contribution is a combination of prioritization with per-function rationale and adaptive extraction that handles different binary types without manual configuration. The adaptive backend selection (Ghidra, native, light) came out of practical debugging — a single analysis path worked poorly across the full corpus, so I changed the design to choose different extraction strategies for different kinds of binaries.
 
 ## 3. System design
 
@@ -62,7 +62,7 @@ The extraction stage supports three backends, selected automatically based on bi
 
 The tool performs a cheap pre-scan before extraction. That pre-scan classifies the file format, checks for Go or Rust markers, estimates binary size, and chooses a backend automatically unless the user overrides it.
 
-This ended up being the most important architectural change I made. Earlier versions assumed that Ghidra should always be the front end. In practice that made the tool brittle on some real targets — yq was the worst case, where Ghidra's Go analysis was slow and noisy. Once I made backend selection adaptive, the tool became much more reliable across the full corpus.
+This ended up being the most important architectural change I made. Earlier versions assumed that Ghidra should always be the front end. When I ran it on real targets, that made the tool brittle on some real targets — yq was the worst case, where Ghidra's Go analysis was slow and noisy. Once I made backend selection adaptive, the tool became much more reliable across the full corpus.
 
 #### Ghidra script (ghidra_scripts/extract_features.py)
 
@@ -77,7 +77,7 @@ The Ghidra backend uses a Jython script that runs inside Ghidra's headless analy
 
 #### Native backend (patchtriage/native.py)
 
-The native backend avoids Ghidra entirely by reconstructing function-level features from `nm` (text symbols) and `objdump` (disassembly). For each function, it parses the disassembly to extract mnemonic histograms, identifies call targets through `bl`/`call` instructions and stub resolution, extracts literal-pool strings and immediate constants, and computes block counts from branch targets. It is less precise than Ghidra on stripped binaries, but it is fast (~2 seconds for 12,000 functions in OpenSSL) and fully deterministic.
+The native backend avoids Ghidra entirely by reconstructing function-level features from `nm` (text symbols) and `objdump` (disassembly). For each function, it parses the disassembly to extract mnemonic histograms, identifies call targets through `bl`/`call` instructions and stub resolution, extracts literal-pool strings and immediate constants, and computes block counts from branch targets. It's less precise than Ghidra on stripped binaries, but it is fast (~2 seconds for 12,000 functions in OpenSSL) and fully deterministic.
 
 ### 3.2 Feature representation
 
@@ -85,7 +85,7 @@ On the rich path (native or Ghidra), PatchTriage extracts per-function features 
 
 On the light path, the tool extracts coarser nodes instead of pretending to have real per-function fidelity. These include a whole-binary summary node, section-level nodes, import-family nodes, named text-symbol nodes when available, Go pclntab-derived function entries with real names and sizes, and cheap instruction summaries from disassembly.
 
-The light backend is much coarser than the richer paths, but in practice it still preserves enough structure to tell whether a release looks broadly security-relevant or not.
+The light backend is definitely coarser. That said, it still turned out to be strong enough to tell whether a release looked broadly security-relevant or mostly routine.
 
 ### 3.3 Matching
 
@@ -246,7 +246,7 @@ The tool also surfaces **12** new functions in B (unmatched), e.g. `_ssl_session
 
 **Same release, not separate CVEs:** Strong signals on other symbols (e.g. `_EVP_PKEY_CTX_add1_hkdf_info` with stack protection and +1712% growth at SEC-LIKELY #1, or `_EVP_Update_loop` with stack protection and bounds constants) can reflect **hardening shipped in 3.0.14** without being additional named CVEs in that advisory set—the published security fixes for this bump are the **three** CVEs above.
 
-Across this case study, the **themes** of all three advisories (buffers/session/DSA) show up somewhere in the ranked or unmatched output, which suggests the triage layer is useful for steering review—while **symbol-to-CVE attribution** should stay grounded in the official text.
+Across this case study, the themes of all three advisories (buffers/session/DSA) show up somewhere in the ranked or unmatched output, which suggests the triage layer is useful for steering review—while **symbol-to-CVE attribution** should stay grounded in the official text.
 
 Reproduction:
 ```bash
@@ -397,16 +397,16 @@ Label precision on targets with known CVEs. For OpenSSL 3.0.14 (3 known CVEs) an
 | OpenSSL | Clear alignment for DSA-validation and session-duplication changes; weaker direct symbol-level alignment for `SSL_free_buffers` | Partial — top ranks plus unmatched B | 2/3 clearly aligned at symbol level; third reflected indirectly |
 | OpenSSH | `_server_accept_loop` (rearchitected), `_grace_alarm_handler` (removed) | #1 matched, removal correctly reported | 1/1 + structural evidence |
 
-Manual inspection found no obvious false positives in the SEC-LIKELY category across either target. SEC-POSSIBLE had a small number of non-CVE functions (stack hardening additions) that are arguably security-relevant even if they are not tied to a specific CVE.
+In the runs I inspected manually, I didn't see obvious false positives in SEC-LIKELY for either target. SEC-POSSIBLE had a small number of non-CVE functions (stack hardening additions) that are arguably security-relevant even if they are not tied to a specific CVE.
 
 Baseline comparison: triage ranking vs. "sort by size delta." A naive baseline for patch triage is to sort functions by absolute size change percentage and review the largest changes first. I compared this against the tool's ranking for the OpenSSL target:
 
 - Size-delta baseline top 5: `_BN_generate_dsa_nonce` (-93.1%), `_EVP_PKEY_CTX_add1_hkdf_info` (+1712%), `_ossl_dsa_check_pairwise` (+81.8%), `_kdf_hkdf_derive` (+63.2%), `_dtls1_retransmit_buffered_messages` (+50.4%)
 - PatchTriage top 5 (after matcher repair): `_EVP_PKEY_CTX_add1_hkdf_info` (SEC-LIKELY), `_ossl_dsa_check_pairwise` (SEC-POSSIBLE), `_EVP_Update_loop` (SEC-LIKELY), `_BN_generate_dsa_nonce` (BEHAVIOR), `_ossl_sm2_encrypt` (BEHAVIOR) — the HKDF helper now ranks #1 with stack protection and +1712% growth, while stack/bounds signals still lift `_EVP_Update_loop` without a huge size delta.
 
-The size-delta baseline captures some of the same functions but misses `_EVP_Update_loop` entirely — it only grew 24.4% in size, but it added stack protection, which is a clear security signal. It does capture `_EVP_PKEY_CTX_add1_hkdf_info` (+1712%) but cannot explain *why* it matters (stack protection, not just growth). More importantly, the baseline provides no rationale: it says "this function changed a lot" but not why. On the zstd target with 1,132 matched functions, the size-delta baseline puts codec optimization functions in the top 10, while the triage heuristics correctly demote those and surface the 3 functions with actual stack hardening.
+The size-delta baseline captures some of the same functions but misses `_EVP_Update_loop` entirely — it only grew 24.4% in size, but it added stack protection, which is a clear security signal. It does capture `_EVP_PKEY_CTX_add1_hkdf_info` (+1712%) but cannot explain why it matters (stack protection, not just growth). More importantly, the baseline provides no rationale: it says "this function changed a lot" but not why. On the zstd target with 1,132 matched functions, the size-delta baseline puts codec optimization functions in the top 10, while the triage heuristics correctly demote those and surface the 3 functions with actual stack hardening.
 
-The key contribution is the triage layer. Instead of leaving the analyst with a large flat diff, it attempts to prioritize the subset of changes that look most relevant to security review and to explain why they were prioritized.
+The part that ended up mattering most was the triage layer. Instead of leaving the analyst with a large flat diff, it attempts to prioritize the subset of changes that look most relevant to security review and to explain why they were prioritized.
 
 ### 5.10 Open-source synthetic test binaries
 
@@ -435,21 +435,21 @@ During corpus testing, I ran into several sources of false positives that requir
 | OpenSSH false match security flags | Similarity-based matching force-paired removed/added functions with unrelated counterparts | Named functions absent from the other binary are sent directly to unmatched, bypassing the similarity pass |
 | OpenSSL bipartite vs exact name | Hungarian matching optimized global sum while a same-named B row stayed unmatched | Post-pass repair reassigns to the unmatched same-named B symbol when unambiguous |
 
-Each of these was found by running the tool on a real corpus target and inspecting the output for things that looked wrong. The fixes were validated against all other targets to make sure they did not introduce regressions.
+Each of these was found by running the tool on a real corpus target and inspecting the output for things that looked wrong. The fixes were validated against all other targets to make sure they didn't introduce regressions.
 
 ## 7. Development process
 
-The project evolved significantly from the original proposal. The initial plan was a Ghidra-only tool that would extract features, match functions, and produce a report — with security triage as a stretch goal.
+The project evolved a ton from the original proposal. The initial plan was a Ghidra-only tool that would extract features, match functions, and produce a report — with security triage as a stretch goal.
 
 The first working version used Ghidra headless mode exclusively. It worked well on the synthetic test binaries (10 functions) and produced correct results on jq (1,449 functions, stripped). This validated the core approach of per-function feature extraction, similarity matching, and ranked reporting.
 
-The "stretch goal" from the proposal — security triage heuristics — became the most important feature once I started testing on real targets. I built a rule-based triage engine that classifies each function diff with the five labels described in section 3.4. The key insight was that specific signal combinations (unsafe API removed + safer API added, stack protection added, bounds constants + new comparisons) are much stronger indicators than generic similarity deltas or size changes. The OpenSSL CVE validation confirmed this on a real target.
+The "stretch goal" from the proposal (security triage heuristics) became the most important feature once I started testing on real targets. I built a rule-based triage engine that classifies each function diff with the five labels described in section 3.4. The key insight was that specific signal combinations (unsafe API removed + safer API added, stack protection added, bounds constants + new comparisons) are much stronger indicators than generic similarity deltas or size changes. The OpenSSL CVE validation confirmed this on a real target.
 
 Running Ghidra on yq (a 10MB Go binary) is what pushed me toward adaptive backends. The Go runtime dominates the binary and Ghidra's analysis was slow and noisy. This led to the light backend for Go/Rust binaries, and eventually the native backend for symbolized C/C++ binaries. The native backend turned out to be the most useful day-to-day: it processes OpenSSL's 12,028 functions in about 2 seconds compared to several minutes under Ghidra.
 
 The OpenSSH target exposed the most interesting matching failure mode. When sshd was split into sshd + sshd-session, 535 functions were removed from the binary. The similarity matcher force-paired them with unrelated new functions, producing false security flags. I spent a while trying threshold tuning (the bad pairs scored 0.70-0.79, while legitimate renamed pairs scored 0.74-0.90 — too much overlap), and eventually concluded that the fix had to be name-based rather than score-based. The three-pass matching pipeline came out of that.
 
-In retrospect, the most important change was abandoning the assumption that one analysis path would work across all targets. The project became much more reliable once I treated backend selection as part of the problem instead of as an implementation detail.
+Looking back, the most important change was abandoning the assumption that one analysis path would work across all targets. The project became much more reliable once I treated backend selection as part of the problem instead of as an implementation detail.
 
 The final codebase is about 5,000 lines of Python across 15 modules, with 54 unit and integration tests that run in about a second. The test suite covers matching, triage, normalization, and report generation and runs on fixture data without requiring Ghidra or real binaries.
 

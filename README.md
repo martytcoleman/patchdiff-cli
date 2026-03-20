@@ -6,6 +6,8 @@ A command-line tool that answers one question quickly:
 
 PatchTriage compares two versions of a binary, matches functions across versions, and produces a ranked security triage queue with evidence-backed rationale. It does not try to replace general-purpose binary diff engines — it focuses on the step after "here are 500 changed functions": deciding which 20 to read first for security patches.
 
+Demo Video: https://drive.google.com/file/d/1CR4U5G37NhrmVKooBy4Aw_cVsVQYJIw7/view?usp=sharing
+
 ## Architecture
 
 ```

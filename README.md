@@ -49,8 +49,8 @@ Every label comes with a list of rationale strings explaining exactly why it was
 ## Installation
 
 ```bash
-git clone <repo-url>
-cd patchdiff-cli
+git clone https://github.com/martytcoleman/patchtriage-cli
+cd patchtriage-cli
 pip install -e .
 ```
 
@@ -161,7 +161,7 @@ See `FINAL_REPORT.md` for detailed evaluation with CVE cross-referencing, baseli
 ## Project Structure
 
 ```
-patchdiff-cli/
+patchtriage-cli/
 ├── FINAL_REPORT.md                    # Full project report with evaluation
 ├── README.md
 ├── pyproject.toml

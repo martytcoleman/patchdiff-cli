@@ -163,7 +163,7 @@ scripts/download_corpus_targets.sh
 
 The script detects OS and architecture automatically. Building OpenSSL and OpenSSH from source takes several minutes. The synthetic test binaries (`corpus/open_source/server_v1`, `server_v2`) are the only ones included in the repository directly.
 
-SQLite and zstd require additional steps — see `README.md` for details.
+SQLite and zstd require additional steps — see the reproduction commands in sections 5.5 and 5.6 below.
 
 ### 4.4 CLI
 
@@ -250,7 +250,7 @@ Across this case study, the **themes** of all three advisories (buffers/session/
 
 Reproduction:
 ```bash
-python -m patchtriage.cli run \
+patchtriage run \
     corpus/openssl/openssl-3.0.13-darwin-arm64 \
     corpus/openssl/openssl-3.0.14-darwin-arm64 \
     -o corpus/openssl/results
@@ -294,7 +294,7 @@ CVE-2024-6387 alignment:
 
 Reproduction:
 ```bash
-python -m patchtriage.cli run \
+patchtriage run \
     corpus/openssh/sshd-9.7p1-darwin-arm64 \
     corpus/openssh/sshd-9.8p1-darwin-arm64 \
     -o corpus/openssh/results
@@ -318,7 +318,7 @@ unzip -o sqlite-tools-osx-arm64-3510200.zip -d v3510200
 unzip -o sqlite-tools-osx-arm64-3510300.zip -d v3510300
 cd ../..
 
-python -m patchtriage.cli run \
+patchtriage run \
     corpus/sqlite/v3510200/sqlite3 \
     corpus/sqlite/v3510300/sqlite3 \
     -o corpus/sqlite/results \
@@ -342,10 +342,11 @@ On this target, the tool flags only 3 functions as plausibly security-relevant (
 
 Reproduction:
 ```bash
+cd corpus/zstd && tar xzf zstd-1.5.5.tar.gz && tar xzf zstd-1.5.7.tar.gz && cd ../..
 cd corpus/zstd/zstd-1.5.5 && make -j && cd ../../..
 cd corpus/zstd/zstd-1.5.7 && make -j && cd ../../..
 
-python -m patchtriage.cli run \
+patchtriage run \
     corpus/zstd/zstd-1.5.5/programs/zstd \
     corpus/zstd/zstd-1.5.7/programs/zstd \
     -o corpus/zstd/results
@@ -361,7 +362,7 @@ One issue I ran into here: jq's embedded stdlib string (~5,000 characters) conta
 
 Reproduction:
 ```bash
-python -m patchtriage.cli run \
+patchtriage run \
     corpus/jq/jq-1.7-macos-arm64 \
     corpus/jq/jq-1.7.1-macos-arm64 \
     -o corpus/jq/results \
@@ -379,7 +380,7 @@ This result is consistent with the release: it was a minor update with no obviou
 
 Reproduction:
 ```bash
-python -m patchtriage.cli run \
+patchtriage run \
     corpus/yq/yq-v4.48.2-darwin-arm64 \
     corpus/yq/yq-v4.49.1-darwin-arm64 \
     -o corpus/yq/results
@@ -413,7 +414,7 @@ A pair of small server binaries with known planted security fixes. The tool iden
 
 Reproduction:
 ```bash
-python -m patchtriage.cli run \
+patchtriage run \
     corpus/open_source/server_v1 \
     corpus/open_source/server_v2 \
     -o corpus/open_source/results
